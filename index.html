@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>平行板电容器 · 微位移传感台 | AI 物理实验</title>
+<meta name="description" content="可交互的平行板电容器数字孪生实验台：实时调节板面积、板间距与介电常数，观察电容、场强、灵敏度与微米级位移反演。" />
+<meta name="theme-color" content="#0f292b" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f292b'/%3E%3Cpath d='M6 12h20M6 20h20' stroke='%23f7efdf' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M11 6v6M21 6v6M11 20v6M21 20v6' stroke='%23e6b45b' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E" />
+<style>
+  :root{
+    --paper:#f1ece2;
+    --paper-2:#e9e1d2;
+    --card:#fbf8f1;
+    --ink:#18312f;
+    --ink-2:#3d5550;
+    --muted:#7c8b83;
+    --line:#d8cfbf;
+    --line-soft:rgba(24,49,47,.10);
+    --teal:#0c6b63;
+    --teal-bright:#1c9b8e;
+    --teal-wash:#e1eee9;
+    --coral:#df5a3b;
+    --coral-soft:#f6ded5;
+    --amber:#e6b45b;
+    --amber-soft:#f4e8cf;
+    --dark:#0f292b;
+    --dark-2:#153537;
+    --cream:#f7efdf;
+    --mono:"Bahnschrift","Cascadia Mono","SFMono-Regular",Consolas,monospace;
+    --sans:"MiSans","HarmonyOS Sans SC","Microsoft YaHei UI","Microsoft YaHei","PingFang SC",sans-serif;
+    --serif:"Source Han Serif SC","Noto Serif SC","Songti SC",SimSun,serif;
+    --shadow:0 1px 0 rgba(255,255,255,.7) inset,0 14px 34px rgba(24,49,47,.07);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--sans);
+    color:var(--ink);
+    background:
+      radial-gradient(1100px 600px at 8% -12%, rgba(255,255,255,.9), transparent 62%),
+      radial-gradient(900px 700px at 100% 0%, rgba(225,238,233,.55), transparent 58%),
+      linear-gradient(180deg,#f4f0e7 0%, var(--paper) 52%, #eee7db 100%);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.028;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  button{font-family:inherit;color:inherit}
+  button:focus-visible, input:focus-visible, a:focus-visible{outline:2px solid var(--coral);outline-offset:3px}
+  .shell{position:relative;z-index:1;width:min(1552px,100%);margin:0 auto;padding:0 26px 24px}
+
+  /* ---------- header ---------- */
+  .topbar{
+    min-height:78px;display:flex;align-items:center;justify-content:space-between;gap:20px;
+    border-bottom:1px solid var(--line);position:relative;
+  }
+  .brand{display:flex;align-items:center;gap:14px;min-width:0}
+  .brand-mark{
+    width:46px;height:46px;border-radius:13px;background:var(--ink);color:var(--cream);
+    display:grid;place-items:center;flex:0 0 auto;position:relative;overflow:hidden;
+    box-shadow:0 8px 18px rgba(24,49,47,.16);
+  }
+  .brand-mark::after{content:"";position:absolute;width:36px;height:36px;border:1px solid rgba(230,180,91,.32);border-radius:50%;right:-15px;top:-13px}
+  .brand-mark svg{width:25px;height:25px}
+  .brand-text{min-width:0}
+  .eyebrow{font:600 9.5px/1.2 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--teal);white-space:nowrap}
+  .brand h1{margin:4px 0 0;font-size:19px;line-height:1.1;letter-spacing:-.02em;font-weight:800;white-space:nowrap}
+  .brand h1 span{color:var(--muted);font-weight:500}
+  .top-meta{display:flex;align-items:center;gap:26px}
+  .meta-cell{text-align:right}
+  .meta-cell .k{font:600 8.5px/1 var(--mono);letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+  .meta-cell .v{font:600 12px/1.4 var(--mono);margin-top:5px;color:var(--ink-2)}
+  .live{display:inline-flex;align-items:center;gap:7px;font:600 10px/1 var(--mono);letter-spacing:.06em;color:var(--teal);background:var(--teal-wash);border:1px solid rgba(12,107,99,.16);padding:7px 10px;border-radius:99px}
+  .live i{width:6px;height:6px;border-radius:50%;background:var(--teal-bright);box-shadow:0 0 0 3px rgba(28,155,142,.14);animation:breathe 2.4s ease-in-out infinite}
+  @keyframes breathe{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+
+  /* ---------- layout ---------- */
+  .stage{
+    display:grid;grid-template-columns:328px minmax(0,1fr) 330px;
+    grid-template-rows:406px 300px;gap:16px;margin-top:18px;
+  }
+  .panel{
+    background:rgba(251,248,241,.94);border:1px solid var(--line);border-radius:16px;
+    box-shadow:var(--shadow);position:relative;overflow:hidden;
+    animation:rise .65s cubic-bezier(.22,.8,.26,1) both;
+  }
+  .panel--controls{grid-column:1;grid-row:1/3;animation-delay:.02s}
+  .panel--visual{grid-column:2;grid-row:1;background:var(--dark);border-color:#092022;animation-delay:.08s}
+  .panel--readout{grid-column:3;grid-row:1/3;animation-delay:.14s}
+  .panel--graph{grid-column:2;grid-row:2;animation-delay:.2s}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 16px 10px;flex:0 0 auto}
+  .head-id{display:flex;align-items:center;gap:9px;min-width:0}
+  .num{font:600 9px/1 var(--mono);color:var(--coral);letter-spacing:.04em;border:1px solid rgba(223,90,59,.32);border-radius:4px;padding:3px 4px}
+  .panel-title{font-size:13px;font-weight:800;letter-spacing:.01em;white-space:nowrap}
+  .panel-sub{font:500 8.5px/1 var(--mono);letter-spacing:.13em;color:var(--muted);text-transform:uppercase;margin-top:4px}
+  .panel-body{padding:0 16px 16px}
+
+  /* ---------- controls ---------- */
+  .controls-scroll{height:100%;display:flex;flex-direction:column;min-height:0}
+  .controls-main{padding:0 15px;overflow:auto;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+  .mode-tabs{display:grid;grid-template-columns:1fr 1fr;background:#ece5d7;padding:3px;border-radius:9px;gap:3px;margin:1px 0 13px}
+  .mode-tab{border:0;background:transparent;border-radius:7px;padding:8px 6px;font-size:11.5px;font-weight:700;color:var(--muted);cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px}
+  .mode-tab svg{width:13px;height:13px}
+  .mode-tab.active{background:var(--card);color:var(--ink);box-shadow:0 2px 6px rgba(24,49,47,.09)}
+  .row-label{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 7px}
+  .row-label .lbl{font-size:10px;font-weight:700;color:var(--ink-2);letter-spacing:.02em}
+  .row-label .tiny{font:500 8.5px/1 var(--mono);color:var(--muted);letter-spacing:.04em}
+  .seg{display:grid;grid-template-columns:1fr 1fr;background:#f0eadf;border:1px solid rgba(24,49,47,.08);padding:2px;border-radius:8px;gap:2px}
+  .seg button{border:0;background:transparent;padding:6px 5px;font-size:10.5px;font-weight:700;color:var(--muted);border-radius:6px;cursor:pointer;transition:.18s}
+  .seg button.active{background:var(--ink);color:var(--cream)}
+  .scenario-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:11px}
+  .chip{border:1px solid var(--line);background:transparent;border-radius:99px;padding:4px 7px;font-size:9.5px;font-weight:600;color:var(--ink-2);cursor:pointer;transition:.18s;line-height:1.2}
+  .chip:hover{border-color:var(--teal);color:var(--teal)}
+  .chip.active{background:var(--teal);border-color:var(--teal);color:#f7f2e7}
+  .drive-note{font-size:9.5px;line-height:1.45;color:var(--muted);margin:6px 0 2px;min-height:26px}
+  .drive-note b{color:var(--teal);font-weight:700}
+  .control{margin-top:9px}
+  .control-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}
+  .control-top label{font-size:11px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:5px}
+  .control-top label em{font-style:normal;color:var(--muted);font-weight:500;font-size:9px}
+  .value-badge{font:600 11px/1 var(--mono);color:var(--teal);background:var(--teal-wash);padding:4px 6px;border-radius:5px;white-space:nowrap}
+  .range-wrap{position:relative;height:22px;display:flex;align-items:center}
+  input[type="range"]{appearance:none;-webkit-appearance:none;width:100%;height:22px;background:transparent;margin:0;cursor:pointer;position:relative;z-index:2}
+  input[type="range"]::-webkit-slider-runnable-track{height:4px;border-radius:99px;background:linear-gradient(90deg,var(--teal) 0 var(--fill,30%),#ddd4c4 var(--fill,30%) 100%)}
+  input[type="range"]::-moz-range-track{height:4px;border-radius:99px;background:#ddd4c4}
+  input[type="range"]::-moz-range-progress{height:4px;border-radius:99px;background:var(--teal)}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--card);border:3px solid var(--teal);margin-top:-5px;box-shadow:0 1px 4px rgba(24,49,47,.22);transition:transform .15s}
+  input[type="range"]:active::-webkit-slider-thumb{transform:scale(1.18)}
+  input[type="range"]::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--card);border:3px solid var(--teal);box-shadow:0 1px 4px rgba(24,49,47,.22)}
+  .range-ends{display:flex;justify-content:space-between;font:500 8px/1 var(--mono);color:#a19a8c;margin-top:-1px}
+  .material-row{display:flex;gap:4px;margin-top:5px;flex-wrap:wrap}
+  .mat{border:1px solid var(--line);background:transparent;border-radius:5px;padding:3px 5px;font-size:8.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s}
+  .mat.active{background:var(--amber-soft);border-color:rgba(230,180,91,.8);color:#765724}
+  .sensor-only{display:none}
+  body.mode-sensor .sensor-only{display:block}
+  body.mode-sensor .lab-only{display:none!important}
+  .fine-row{display:flex;align-items:center;gap:5px;margin-top:4px}
+  .fine-row button{width:25px;height:23px;border:1px solid var(--line);border-radius:5px;background:#f6f1e7;font:600 13px/1 var(--mono);color:var(--ink-2);cursor:pointer}
+  .fine-row button:hover{border-color:var(--teal);color:var(--teal)}
+  .fine-row span{font:500 8.5px/1.3 var(--mono);color:var(--muted);letter-spacing:.02em}
+  .task-list{margin-top:11px;padding-top:9px;border-top:1px solid var(--line-soft)}
+  .task-item{display:flex;align-items:flex-start;gap:6px;font-size:9px;line-height:1.4;color:var(--muted);padding:3px 0;transition:.2s}
+  .task-item i{width:12px;height:12px;border:1px solid #cfc5b3;border-radius:50%;flex:0 0 auto;margin-top:1px;position:relative;transition:.2s}
+  .task-item.done{color:var(--ink-2)}
+  .task-item.done i{background:var(--teal);border-color:var(--teal)}
+  .task-item.done i::after{content:"";position:absolute;left:3.5px;top:1.7px;width:3px;height:6px;border:solid #fff;border-width:0 1.5px 1.5px 0;transform:rotate(42deg)}
+  .assistant{margin-top:10px;background:linear-gradient(135deg,#f6edda,#f2e6cd);border:1px solid rgba(230,180,91,.38);border-radius:10px;padding:9px 10px 9px 11px;position:relative;overflow:hidden}
+  .assistant::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--amber)}
+  .assistant .a-head{display:flex;align-items:center;gap:5px;font:700 8.5px/1 var(--mono);letter-spacing:.1em;color:#8a6424;text-transform:uppercase}
+  .assistant .a-head svg{width:11px;height:11px}
+  .assistant p{margin:5px 0 0;font-size:9.8px;line-height:1.5;color:#695531}
+  .assistant b{color:#4f3d1e}
+  .controls-foot{margin-top:auto;padding:9px 15px 11px;border-top:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .task-progress{display:flex;align-items:center;gap:7px;min-width:0}
+  .tp-dots{display:flex;gap:3px}
+  .tp-dots i{width:5px;height:5px;border-radius:50%;background:#d3c9b8;transition:.2s}
+  .tp-dots i.on{background:var(--teal)}
+  .task-progress span{font-size:8.5px;color:var(--muted);white-space:nowrap}
+  .link-btn{border:0;background:transparent;font-size:9.5px;font-weight:700;color:var(--teal);cursor:pointer;padding:3px;text-decoration:underline;text-underline-offset:3px}
+
+  /* ---------- visual ---------- */
+  .visual-wrap{display:flex;flex-direction:column;height:100%;min-height:0}
+  .visual-head{padding:14px 17px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;color:var(--cream)}
+  .visual-head .panel-title{color:var(--cream)}
+  .visual-head .panel-sub{color:rgba(247,239,223,.48)}
+  .visual-head .num{color:var(--amber);border-color:rgba(230,180,91,.45)}
+  .dark-chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;padding-top:2px}
+  .dchip{font:500 8.5px/1 var(--mono);color:rgba(247,239,223,.7);border:1px solid rgba(247,239,223,.15);background:rgba(247,239,223,.04);border-radius:99px;padding:5px 7px;white-space:nowrap}
+  .dchip b{color:var(--cream);font-weight:600}
+  .svg-stage{flex:1;min-height:0;position:relative;margin:2px 4px 0}
+  #scene{width:100%;height:100%;display:block;overflow:visible;touch-action:none;user-select:none}
+  .drag-hint{position:absolute;right:15px;top:8px;display:flex;align-items:center;gap:5px;font:500 8px/1 var(--mono);letter-spacing:.06em;color:rgba(247,239,223,.45);pointer-events:none}
+  .drag-hint svg{width:10px;height:10px}
+  .plate-g{cursor:ns-resize;transition:filter .2s}
+  .plate-g:hover{filter:brightness(1.08)}
+  body.mode-sensor .plate-g{cursor:default}
+  .visual-foot{display:flex;align-items:center;justify-content:space-between;padding:4px 17px 10px;gap:12px}
+  .legend{display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:4px;font:500 8px/1 var(--mono);color:rgba(247,239,223,.5);letter-spacing:.03em}
+  .legend i{width:6px;height:6px;border-radius:50%;display:inline-block}
+  .legend .plus{background:var(--coral)}
+  .legend .minus{background:#58d3c4}
+  .legend .field{width:13px;height:1px;background:var(--amber);border-radius:2px;position:relative}
+  .visual-foot .eq{font:500 10px/1 var(--mono);color:rgba(247,239,223,.6)}
+  .visual-foot .eq b{color:var(--amber);font-weight:600}
+  #epsLabel{display:none}
+  .field-line{stroke-dasharray:4 5;animation:flow 1.8s linear infinite}
+  @keyframes flow{to{stroke-dashoffset:-18}}
+  @media (prefers-reduced-motion: reduce){.field-line{animation:none}.panel{animation:none}.live i{animation:none}}
+
+  /* ---------- readout ---------- */
+  .readout-body{padding:0 16px 14px;display:flex;flex-direction:column;height:calc(100% - 58px);min-height:0}
+  .big-readout{background:linear-gradient(160deg,#eef4ef,#f8f4ea);border:1px solid rgba(12,107,99,.15);border-radius:12px;padding:12px 13px 10px;position:relative;overflow:hidden}
+  .big-readout::after{content:"";position:absolute;width:130px;height:130px;border:1px solid rgba(12,107,99,.08);border-radius:50%;right:-56px;top:-66px}
+  .big-k{display:flex;align-items:center;justify-content:space-between;gap:5px;font:600 8.5px/1 var(--mono);letter-spacing:.12em;color:var(--teal);text-transform:uppercase}
+  .big-k .unit-hint{color:var(--muted);letter-spacing:.03em;text-transform:none;font-weight:500;font-size:8px}
+  .cap-line{display:flex;align-items:baseline;gap:6px;margin-top:3px}
+  .cap-value{font:600 42px/.98 var(--mono);letter-spacing:-.045em;color:var(--ink);font-variant-numeric:tabular-nums}
+  .cap-unit{font:600 13px/1 var(--mono);color:var(--teal)}
+  .cap-sub{font-size:8.5px;color:var(--muted);margin-top:3px;line-height:1.3}
+  .cap-bar{height:5px;border-radius:99px;background:#dcd5c7;margin-top:9px;position:relative;overflow:visible}
+  .cap-bar::before{content:"";position:absolute;left:0;right:0;top:0;height:5px;border-radius:99px;background:linear-gradient(90deg,var(--amber),var(--teal));opacity:.8}
+  .cap-bar i{position:absolute;top:50%;width:9px;height:9px;border-radius:50%;background:var(--card);border:2px solid var(--ink);transform:translate(-50%,-50%);z-index:1;left:30%;transition:left .18s}
+  .cap-scale{display:flex;justify-content:space-between;font:500 7.5px/1 var(--mono);color:#9a9284;margin-top:4px}
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);border-radius:10px;overflow:hidden;margin-top:10px}
+  .metric{background:var(--card);padding:8px 9px 7px;min-width:0}
+  .metric .mk{font-size:8px;color:var(--muted);white-space:nowrap;display:flex;justify-content:space-between;gap:3px}
+  .metric .mv{font:600 15px/1.15 var(--mono);color:var(--ink-2);margin-top:3px;white-space:nowrap;letter-spacing:-.02em}
+  .metric .mv small{font:500 8px/1 var(--mono);color:var(--muted);margin-left:2px;letter-spacing:0}
+  .sensor-card{margin-top:10px;background:linear-gradient(155deg,#102b2d,#173c3b);border-radius:12px;padding:11px 11px 10px;color:var(--cream);position:relative;overflow:hidden;flex:1;min-height:190px;display:flex;flex-direction:column}
+  .sensor-card::before{content:"";position:absolute;width:160px;height:160px;border:1px solid rgba(230,180,91,.13);border-radius:50%;right:-76px;bottom:-88px}
+  .sensor-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .sensor-top .sc-k{font:600 8px/1 var(--mono);letter-spacing:.14em;color:rgba(247,239,223,.55);text-transform:uppercase}
+  .sensor-badge{font:600 7.5px/1 var(--mono);color:#1d3836;background:var(--amber);border-radius:99px;padding:4px 6px;letter-spacing:.02em}
+  .sensor-main{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:7px}
+  .dx-value{font:600 30px/.95 var(--mono);letter-spacing:-.035em;color:var(--cream);font-variant-numeric:tabular-nums;transition:color .2s}
+  .dx-value small{font:500 10px/1 var(--mono);color:rgba(247,239,223,.55);margin-left:3px;letter-spacing:0}
+  .sensor-state{font:500 7.5px/1.35 var(--mono);color:rgba(247,239,223,.45);text-align:right;padding-bottom:2px;max-width:82px}
+  .sensor-state b{display:block;color:#72d9c9;font-weight:600}
+  .sensor-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:rgba(247,239,223,.1);border-radius:6px;overflow:hidden;margin-top:8px}
+  .sg{background:rgba(247,239,223,.045);padding:5px 6px}
+  .sg .k{font-size:7px;color:rgba(247,239,223,.42);white-space:nowrap}
+  .sg .v{font:600 10px/1.15 var(--mono);color:var(--cream);margin-top:2px;white-space:nowrap}
+  .sensor-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px}
+  .sensor-live-tag{font:500 7.5px/1 var(--mono);color:#78d9c9;letter-spacing:.04em}
+  .sensor-chain{display:flex;align-items:center;justify-content:space-between;gap:3px;margin-top:9px;padding:7px 3px;border-top:1px solid rgba(247,239,223,.08);border-bottom:1px solid rgba(247,239,223,.08)}
+  .sc-step{text-align:center;min-width:0}
+  .sc-step span{display:block;font-size:6.3px;line-height:1.2;color:rgba(247,239,223,.35);white-space:nowrap}
+  .sc-step b{display:block;font:600 9px/1.3 var(--mono);color:rgba(247,239,223,.82);margin-top:2px}
+  .sensor-chain i{font-style:normal;font-size:10px;color:rgba(230,180,91,.55);flex:0 0 auto}
+  .sensor-wave-wrap{position:relative;height:62px;margin-top:8px;border:1px solid rgba(247,239,223,.08);border-radius:5px;background:rgba(0,0,0,.12);overflow:hidden;flex:0 0 auto}
+  #sensorWave{width:100%;height:100%;display:block}
+  .sw-label{position:absolute;left:6px;top:5px;font:500 6.5px/1 var(--mono);letter-spacing:.08em;color:rgba(247,239,223,.32);pointer-events:none;z-index:1}
+  .sensor-scale{margin-top:auto;padding-top:10px}
+  .ss-top{display:flex;align-items:center;justify-content:space-between;gap:5px;font:500 7px/1 var(--mono);letter-spacing:.06em;color:rgba(247,239,223,.38)}
+  .ss-top span:last-child{letter-spacing:0;color:rgba(247,239,223,.55)}
+  .ss-track{height:16px;margin-top:7px;position:relative;border-radius:3px;background:linear-gradient(90deg,rgba(247,239,223,.04),rgba(230,180,91,.1),rgba(247,239,223,.04));border:1px solid rgba(247,239,223,.08);overflow:hidden}
+  .ss-ticks{position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,rgba(247,239,223,.16) 0 1px,transparent 1px 10%)}
+  .ss-zero{position:absolute;top:0;bottom:0;width:1px;background:rgba(247,239,223,.38);left:20%}
+  #ssNeedle{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--amber);left:20%;box-shadow:0 0 6px rgba(230,180,91,.7);transition:left .15s}
+  .ss-labels{display:flex;justify-content:space-between;margin-top:4px;font:500 7px/1 var(--mono);color:rgba(247,239,223,.35)}
+  .ss-labels span:nth-child(2){color:rgba(247,239,223,.55)}
+  body:not(.mode-sensor) .sensor-main,body:not(.mode-sensor) .sensor-grid,body:not(.mode-sensor) .sensor-foot,body:not(.mode-sensor) .sensor-scale,body:not(.mode-sensor) .sensor-chain,body:not(.mode-sensor) .sensor-wave-wrap{display:none}
+  body:not(.mode-sensor) .sensor-card{display:flex;flex-direction:column}
+  body:not(.mode-sensor) .sensor-top{flex:0 0 auto}
+  .ghost-icon{width:42px;height:42px;margin-bottom:2px;opacity:.9}
+  .noise-toggle{display:flex;align-items:center;gap:5px;font:500 7.5px/1 var(--mono);color:rgba(247,239,223,.52);cursor:pointer;user-select:none}
+  .noise-toggle input{position:absolute;opacity:0;pointer-events:none}
+  .noise-toggle .switch{width:23px;height:12px;border-radius:99px;background:rgba(247,239,223,.18);position:relative;transition:.2s}
+  .noise-toggle .switch::after{content:"";position:absolute;width:8px;height:8px;border-radius:50%;background:rgba(247,239,223,.7);top:2px;left:2px;transition:.2s}
+  .noise-toggle input:checked + .switch{background:rgba(28,155,142,.7)}
+  .noise-toggle input:checked + .switch::after{left:13px;background:#fff}
+  .activate-btn{border:1px solid rgba(230,180,91,.5);background:rgba(230,180,91,.08);color:var(--amber);border-radius:5px;padding:5px 7px;font-size:8px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .activate-btn:hover{background:rgba(230,180,91,.16)}
+  .sensor-ghost{position:relative;inset:auto;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:6px 8px 4px;z-index:2;flex:1}
+  .sensor-ghost p{margin:0;font-size:9px;line-height:1.55;color:rgba(247,239,223,.6);max-width:210px}
+  body.mode-sensor .sensor-ghost{display:none}
+  .readout-tip{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:8px;line-height:1.4;color:var(--muted)}
+  .readout-tip i{width:4px;height:4px;border-radius:50%;background:var(--amber);flex:0 0 auto}
+
+  /* ---------- graph ---------- */
+  .graph-panel{display:flex;flex-direction:column;height:100%;min-height:0}
+  .graph-head{padding:12px 16px 5px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex:0 0 auto}
+  .graph-tools{display:flex;align-items:center;gap:4px}
+  .mini-tab{border:1px solid var(--line);background:transparent;border-radius:5px;padding:4px 6px;font-size:8.5px;font-weight:700;color:var(--muted);cursor:pointer}
+  .mini-tab.active{background:var(--ink);border-color:var(--ink);color:var(--cream)}
+  .icon-btn{border:1px solid var(--line);background:transparent;border-radius:5px;padding:4px 5px;cursor:pointer;display:flex;align-items:center;gap:4px;font-size:8.5px;font-weight:700;color:var(--ink-2)}
+  .icon-btn svg{width:10px;height:10px}
+  .icon-btn:hover{border-color:var(--teal);color:var(--teal)}
+  .chart-wrap{position:relative;flex:1;min-height:0;margin:0 10px}
+  #chart{width:100%;height:100%;display:block;cursor:crosshair}
+  .chart-tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--cream);font:500 8px/1.35 var(--mono);padding:5px 7px;border-radius:4px;transform:translate(-50%,-110%);opacity:0;transition:opacity .12s;white-space:nowrap;z-index:3}
+  .chart-tip.on{opacity:1}
+  .graph-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 16px 9px;flex:0 0 auto}
+  .graph-insight{font-size:8.5px;line-height:1.35;color:var(--muted);min-width:0}
+  .graph-insight b{color:var(--ink-2);font-weight:700}
+  .graph-note{font:500 7.5px/1 var(--mono);color:#a49b8c;white-space:nowrap}
+  .graph-note .dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--coral);margin-right:3px}
+
+  /* ---------- formula strip ---------- */
+  .formula-strip{
+    margin-top:16px;background:linear-gradient(120deg,#102c2e 0%,#15393a 60%,#102c2e 100%);
+    border:1px solid #0a2425;color:var(--cream);border-radius:16px;box-shadow:0 18px 38px rgba(15,41,43,.16);
+    display:grid;grid-template-columns:215px minmax(0,1fr) 245px;gap:0;overflow:hidden;
+    animation:rise .7s .26s cubic-bezier(.22,.8,.26,1) both;
+  }
+  .formula-intro{padding:17px 18px;border-right:1px solid rgba(247,239,223,.11);display:flex;flex-direction:column;justify-content:space-between}
+  .formula-intro .num{color:var(--amber);border-color:rgba(230,180,91,.4);align-self:flex-start}
+  .formula-intro h3{margin:9px 0 4px;font-size:15px;line-height:1.1;letter-spacing:-.01em}
+  .formula-intro p{margin:0;font-size:9px;line-height:1.45;color:rgba(247,239,223,.45)}
+  .f-code{margin-top:10px;font:500 8.5px/1.5 var(--mono);color:var(--amber);background:rgba(0,0,0,.2);border:1px solid rgba(247,239,223,.1);border-radius:6px;padding:5px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .formula-list{display:grid;grid-template-columns:1fr 1fr 1fr;min-width:0}
+  .formula-item{padding:17px 17px 14px;border-right:1px solid rgba(247,239,223,.09);min-width:0}
+  .formula-item:last-child{border-right:0}
+  .fi-k{font:600 8px/1 var(--mono);letter-spacing:.12em;color:rgba(247,239,223,.4);text-transform:uppercase;display:flex;align-items:center;justify-content:space-between;gap:5px}
+  .fi-k span{color:var(--amber);letter-spacing:0;font-size:8px}
+  .fi-eq{font:500 19px/1.1 var(--mono);color:var(--cream);margin-top:9px;letter-spacing:-.04em;white-space:nowrap}
+  .fi-eq .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:12px;line-height:1.12;margin:0 2px;transform:translateY(-2px)}
+  .fi-eq .frac span:first-child{border-bottom:1px solid rgba(247,239,223,.45);padding:0 3px 2px}
+  .fi-eq .frac span:last-child{padding:2px 3px 0}
+  .fi-desc{margin-top:8px;font-size:8.5px;line-height:1.45;color:rgba(247,239,223,.48)}
+  .fi-desc b{color:#8fded2;font-weight:600}
+  .formula-cta{padding:17px 17px 15px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid rgba(247,239,223,.11)}
+  .cta-btn{width:100%;border:0;border-radius:8px;background:var(--coral);color:#fff9ef;padding:10px 9px;font-size:10.5px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;box-shadow:0 6px 14px rgba(223,90,59,.24);transition:.18s}
+  .cta-btn:hover{background:#ee6746;transform:translateY(-1px)}
+  .cta-btn svg{width:12px;height:12px}
+  .cta-note{margin-top:7px;font-size:8px;line-height:1.45;color:rgba(247,239,223,.42);text-align:center}
+  .cta-links{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px}
+  .cta-links button{border:0;background:transparent;color:rgba(247,239,223,.6);font-size:8px;cursor:pointer;text-decoration:underline;text-underline-offset:2px;padding:2px}
+  .cta-links button:hover{color:var(--cream)}
+
+  .page-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 2px 0;color:#9a9284;font:500 7.5px/1.4 var(--mono);letter-spacing:.03em}
+  .page-foot span:last-child{text-align:right}
+
+  /* ---------- modal ---------- */
+  .modal[hidden]{display:none}
+  .modal{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:24px;background:rgba(10,31,32,.52);backdrop-filter:blur(8px);animation:fade .2s ease both}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal-card{width:min(760px,100%);max-height:88vh;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.3);animation:pop .28s cubic-bezier(.2,.9,.3,1) both}
+  @keyframes pop{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+  .modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:18px 20px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card);z-index:2}
+  .modal-head h3{margin:5px 0 2px;font-size:18px;letter-spacing:-.02em}
+  .modal-head p{margin:0;font-size:9px;color:var(--muted)}
+  .close-btn{width:27px;height:27px;border:1px solid var(--line);background:transparent;border-radius:50%;cursor:pointer;font-size:17px;line-height:1;color:var(--muted);flex:0 0 auto}
+  .close-btn:hover{color:var(--ink);border-color:var(--ink)}
+  .report-body{padding:16px 20px 20px}
+  .report-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#f0eadf;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font:500 8px/1.3 var(--mono);color:var(--muted);margin-bottom:13px}
+  .report-meta b{color:var(--ink)}
+  .rep-section{margin-top:13px}
+  .rep-h{display:flex;align-items:center;gap:7px;font:700 8.5px/1 var(--mono);letter-spacing:.1em;color:var(--teal);text-transform:uppercase;margin-bottom:6px}
+  .rep-h::after{content:"";height:1px;background:var(--line);flex:1}
+  .kv-table{width:100%;border-collapse:collapse;font-size:9.5px}
+  .kv-table td{border-bottom:1px solid var(--line-soft);padding:5px 4px;vertical-align:top}
+  .kv-table td:first-child{color:var(--muted);width:31%;white-space:nowrap}
+  .kv-table td:last-child{font-family:var(--mono);font-size:9px;color:var(--ink-2)}
+  .rep-text{font-size:10px;line-height:1.65;color:var(--ink-2);margin:0}
+  .rep-text b{color:var(--ink)}
+  .rep-formula{font-family:var(--mono);font-size:9.5px;background:#f3ede2;border-left:2px solid var(--amber);padding:6px 8px;margin:5px 0;overflow:auto;white-space:nowrap}
+  .modal-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:12px 20px 18px;border-top:1px solid var(--line);position:sticky;bottom:0;background:var(--card)}
+  .btn-ghost{border:1px solid var(--line);background:transparent;border-radius:6px;padding:7px 11px;font-size:9.5px;font-weight:700;color:var(--ink-2);cursor:pointer}
+  .btn-ghost:hover{border-color:var(--teal);color:var(--teal)}
+  .btn-solid{border:1px solid var(--ink);background:var(--ink);color:var(--cream);border-radius:6px;padding:7px 12px;font-size:9.5px;font-weight:700;cursor:pointer}
+  .btn-solid:hover{background:#224542}
+  .table-wrap{border:1px solid var(--line);border-radius:7px;overflow:auto;max-height:300px}
+  .data-table{width:100%;border-collapse:collapse;font:500 9px/1.4 var(--mono);white-space:nowrap}
+  .data-table th{text-align:left;background:#efe8da;color:var(--muted);font-weight:600;padding:6px 7px;position:sticky;top:0}
+  .data-table td{padding:6px 7px;border-top:1px solid var(--line-soft);color:var(--ink-2)}
+  .data-table tr:hover td{background:#f7f1e5}
+  .empty{padding:26px 10px;text-align:center;font-size:9.5px;color:var(--muted)}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,12px);background:var(--ink);color:var(--cream);padding:9px 14px;border-radius:99px;font:500 10px/1 var(--mono);box-shadow:0 12px 30px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:.25s;z-index:80;white-space:nowrap}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+
+  /* demo cursor */
+  #demoCursor{position:fixed;left:0;top:0;width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(223,90,59,.8);background:rgba(223,90,59,.12);box-shadow:0 0 0 5px rgba(223,90,59,.08);pointer-events:none;z-index:99;opacity:0;transform:translate(-50%,-50%);transition:opacity .2s}
+  #demoCursor::after{content:"";position:absolute;width:4px;height:4px;border-radius:50%;background:var(--coral);left:50%;top:50%;transform:translate(-50%,-50%)}
+  body.demo #demoCursor{opacity:1}
+
+  @media (max-width:1240px){
+    .stage{grid-template-columns:300px minmax(0,1fr);grid-template-rows:406px 300px auto}
+    .panel--controls{grid-column:1;grid-row:1/3}
+    .panel--visual{grid-column:2;grid-row:1}
+    .panel--graph{grid-column:2;grid-row:2}
+    .panel--readout{grid-column:1/3;grid-row:3;min-height:340px}
+    .readout-body{display:grid;grid-template-columns:1fr 1.3fr;gap:12px;height:auto}
+    .big-readout{grid-column:1}
+    .metrics{grid-column:1;grid-template-columns:repeat(3,1fr);margin-top:-2px}
+    .sensor-card{grid-column:2;grid-row:1/3;margin-top:0;min-height:0}
+    .readout-tip{grid-column:1;margin:0}
+    .formula-strip{grid-template-columns:190px 1fr 220px}
+    .formula-list{grid-template-columns:1fr 1fr}
+    .formula-item:nth-child(3){display:none}
+    .formula-item:nth-child(2){border-right:0}
+  }
+  @media (max-width:900px){
+    .shell{padding:0 14px 18px}
+    .top-meta .meta-cell:nth-child(-n+2){display:none}
+    .brand h1{font-size:17px}
+    .stage{grid-template-columns:1fr;grid-template-rows:auto;gap:12px}
+    .panel--controls,.panel--visual,.panel--graph,.panel--readout{grid-column:1;grid-row:auto}
+    .panel--controls{max-height:none}
+    .controls-scroll{height:auto}
+    .visual-wrap{min-height:390px}
+    .panel--readout .readout-body{display:flex;height:auto}
+    .panel--readout{min-height:0}
+    .sensor-card{min-height:200px}
+    .formula-strip{grid-template-columns:1fr;margin-top:12px}
+    .formula-intro{border-right:0;border-bottom:1px solid rgba(247,239,223,.11)}
+    .formula-list{grid-template-columns:1fr 1fr}
+    .formula-item:nth-child(3){display:block;border-top:1px solid rgba(247,239,223,.09)}
+    .formula-cta{border-left:0;border-top:1px solid rgba(247,239,223,.11)}
+    .topbar{min-height:70px}
+    .panel--readout{grid-column:1}
+  }
+  @media (max-width:560px){
+    .brand-mark{width:40px;height:40px}
+    .brand h1 span{display:none}
+    .panel-head{padding:12px 13px 8px}
+    .controls-main{padding:0 13px}
+    .formula-list{grid-template-columns:1fr}
+    .formula-item{border-right:0!important;border-top:1px solid rgba(247,239,223,.09)}
+    .formula-item:first-child{border-top:0}
+    .formula-item:nth-child(3){display:block}
+    .cap-value{font-size:36px}
+    .modal{padding:10px}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5h16M4 15.5h16" stroke="#f7efdf" stroke-width="2" stroke-linecap="round"/><path d="M9 4v3.5M15 4v3.5M9 16.5V20M15 16.5V20" stroke="#e6b45b" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </div>
+      <div class="brand-text">
+        <div class="eyebrow">AI PHYSICS · DIGITAL TWIN</div>
+        <h1>平行板电容器 <span>· 微位移传感台</span></h1>
+      </div>
+    </div>
+    <div class="top-meta">
+      <div class="meta-cell"><div class="k">EXPERIMENT</div><div class="v">CAP-02 / 2026</div></div>
+      <div class="meta-cell"><div class="k">RESOLUTION</div><div class="v">0.001 mm</div></div>
+      <div class="live"><i></i>实时求解</div>
+    </div>
+  </header>
+
+  <main class="stage">
+    <!-- ============ CONTROLS ============ -->
+    <section class="panel panel--controls" aria-label="实验参数">
+      <div class="controls-scroll">
+        <div class="panel-head">
+          <div class="head-id"><span class="num">01</span><div><div class="panel-title">实验参数</div><div class="panel-sub">PARAMETERS</div></div></div>
+          <button class="icon-btn" id="resetBtn" title="恢复默认参数">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 10a8 8 0 1 1 2 6M4 5v5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            重置
+          </button>
+        </div>
+        <div class="controls-main">
+          <div class="mode-tabs" role="tablist" aria-label="工作模式">
+            <button class="mode-tab active" data-mode="lab" role="tab" aria-selected="true">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M5 7h14M5 17h14M8 3v4M16 3v4M8 17v4M16 17v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+              电容实验
+            </button>
+            <button class="mode-tab" data-mode="sensor" role="tab" aria-selected="false">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v7M12 14v7M8 10h8M9 14l-2 3M15 14l2 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.2" stroke="currentColor" stroke-width="1.7"/></svg>
+              位移传感
+            </button>
+          </div>
+
+          <div class="row-label"><span class="lbl">场景预设</span><span class="tiny">PRESET</span></div>
+          <div class="scenario-row">
+            <button class="chip" data-scene="teach">教学演示</button>
+            <button class="chip" data-scene="micro" active>微创参数</button>
+            <button class="chip" data-scene="sensitive">高灵敏</button>
+          </div>
+
+          <div class="row-label"><span class="lbl">激励方式</span><span class="tiny">EXCITATION</span></div>
+          <div class="seg" id="driveSeg">
+            <button class="active" data-drive="voltage">恒压源</button>
+            <button data-drive="charge">恒电荷</button>
+          </div>
+          <p class="drive-note" id="driveNote">电压恒定：d 增大 → C 减小 → Q 随之减小。</p>
+
+          <div class="control">
+            <div class="control-top"><label for="areaRange">板面积 <em>S</em></label><span class="value-badge" id="areaVal">4.0 mm²</span></div>
+            <div class="range-wrap"><input type="range" id="areaRange" min="1" max="100" step="0.5" value="4"></div>
+            <div class="range-ends"><span>1</span><span>100 mm²</span></div>
+          </div>
+
+          <div class="control">
+            <div class="control-top"><label for="gapRange" id="gapLabel">板间距 <em>d</em></label><span class="value-badge" id="gapVal">100 µm</span></div>
+            <div class="range-wrap"><input type="range" id="gapRange" min="20" max="2000" step="1" value="100"></div>
+            <div class="range-ends"><span>20</span><span>2000 µm</span></div>
+          </div>
+
+          <div class="control">
+            <div class="control-top"><label for="epsRange">相对介电常数 <em>εᵣ</em></label><span class="value-badge" id="epsVal">1.00</span></div>
+            <div class="range-wrap"><input type="range" id="epsRange" min="1" max="12" step="0.05" value="1"></div>
+            <div class="material-row" id="materialRow">
+              <button class="mat active" data-eps="1.00">空气 1.0</button>
+              <button class="mat" data-eps="2.10">PTFE 2.1</button>
+              <button class="mat" data-eps="5.00">玻璃 5.0</button>
+              <button class="mat" data-eps="9.50">陶瓷 9.5</button>
+            </div>
+          </div>
+
+          <div class="control lab-only" id="voltageControl">
+            <div class="control-top"><label for="voltRange">极板电压 <em>V</em></label><span class="value-badge" id="voltVal">5.0 V</span></div>
+            <div class="range-wrap"><input type="range" id="voltRange" min="0.1" max="30" step="0.1" value="5"></div>
+            <div class="range-ends"><span>0.1</span><span>30 V</span></div>
+          </div>
+          <div class="control lab-only" id="chargeControl" hidden>
+            <div class="control-top"><label for="chargeRange">极板电荷 <em>Q</em></label><span class="value-badge" id="chargeVal">1.77 pC</span></div>
+            <div class="range-wrap"><input type="range" id="chargeRange" min="0.01" max="100" step="0.01" value="1.77"></div>
+            <div class="range-ends"><span>0.01</span><span>100 pC</span></div>
+          </div>
+
+          <div class="control sensor-only">
+            <div class="control-top"><label for="dxRange">器械尖端位移 <em>Δx</em></label><span class="value-badge" id="dxVal">+0 µm</span></div>
+            <div class="range-wrap"><input type="range" id="dxRange" min="-80" max="300" step="1" value="0"></div>
+            <div class="range-ends"><span id="dxMin">−80</span><span id="dxMax">+300 µm</span></div>
+            <div class="fine-row">
+              <button id="dxMinus" aria-label="位移减小 1 微米">−</button>
+              <button id="dxPlus" aria-label="位移增加 1 微米">＋</button>
+              <span>单步 1 µm · 测量目标 0.001 mm</span>
+            </div>
+          </div>
+
+          <div class="task-list">
+            <div class="row-label" style="margin-bottom:5px"><span class="lbl">实验任务</span><span class="tiny">TASKS</span></div>
+            <div class="task-item" data-task="d"><i></i><span>改变板距 d，观察 C 的反向变化</span></div>
+            <div class="task-item" data-task="drive"><i></i><span>切换恒压 / 恒电荷，比较场强 E</span></div>
+            <div class="task-item" data-task="sensor"><i></i><span>进入传感模式，完成 1 µm 位移反演</span></div>
+          </div>
+          <div class="assistant">
+            <div class="a-head"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l1.7 4.3L18 9l-4.3 1.7L12 15l-1.7-4.3L6 9l4.3-1.7L12 3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" fill="currentColor"/></svg>AI 实验助教</div>
+            <p id="assistantText">保持 S、εᵣ 不变时，d 减半，C 精确翻倍。当前 100 µm 下的灵敏度约为 3.54 fF/µm（1 µm 位移约产生 1% 电容变化）。</p>
+          </div>
+        </div>
+        <div class="controls-foot">
+          <div class="task-progress">
+            <div class="tp-dots" id="taskDots"><i></i><i></i><i></i></div>
+            <span id="taskText">探索进度 0 / 3</span>
+          </div>
+          <button class="link-btn" id="guideBtn">实验指引</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ VISUAL ============ -->
+    <section class="panel panel--visual" aria-label="电场实时剖面">
+      <div class="visual-wrap">
+        <div class="visual-head">
+          <div class="head-id"><span class="num">02</span><div><div class="panel-title">电场实时剖面</div><div class="panel-sub">LIVE FIELD SECTION</div></div></div>
+          <div class="dark-chips">
+            <span class="dchip">S <b id="chipS">4.0 mm²</b></span>
+            <span class="dchip">d <b id="chipD">100 µm</b></span>
+            <span class="dchip">εᵣ <b id="chipEps">1.00</b></span>
+          </div>
+        </div>
+        <div class="svg-stage">
+          <svg id="scene" viewBox="0 0 900 420" role="img" aria-label="平行板电容器剖面，可拖动上极板改变板间距">
+            <defs>
+              <radialGradient id="bgGlow" cx="50%" cy="44%" r="58%">
+                <stop offset="0%" stop-color="#2c6660" stop-opacity=".33"/>
+                <stop offset="100%" stop-color="#0f292b" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="plateTop" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#c8ebe3"/>
+                <stop offset="22%" stop-color="#67bdb0"/>
+                <stop offset="100%" stop-color="#226f68"/>
+              </linearGradient>
+              <linearGradient id="plateFace" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#4ca99d"/>
+                <stop offset="100%" stop-color="#145a56"/>
+              </linearGradient>
+              <linearGradient id="plateBottom" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#367f78"/>
+                <stop offset="100%" stop-color="#0e4643"/>
+              </linearGradient>
+              <linearGradient id="plateSide" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#1b5f5a"/>
+                <stop offset="100%" stop-color="#0c3b39"/>
+              </linearGradient>
+              <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+                <circle cx="1.5" cy="1.5" r="1" fill="#7fd8ca" opacity=".11"/>
+              </pattern>
+              <pattern id="hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(26)">
+                <line x1="0" y1="0" x2="0" y2="14" stroke="#e6b45b" stroke-width="1" opacity=".16"/>
+              </pattern>
+              <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="4" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="soft" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur stdDeviation="10"/>
+              </filter>
+              <marker id="arrowField" markerWidth="7" markerHeight="7" refX="5.4" refY="3.5" orient="auto">
+                <path d="M0,0 L7,3.5 L0,7 Z" fill="#e6b45b" opacity=".85"/>
+              </marker>
+              <marker id="dimArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                <path d="M8,1 L1,4 L8,7" fill="none" stroke="#a9c8c1" stroke-width="1.2"/>
+              </marker>
+              <marker id="dimArrow2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                <path d="M0,1 L7,4 L0,7" fill="none" stroke="#a9c8c1" stroke-width="1.2"/>
+              </marker>
+            </defs>
+            <rect width="900" height="420" fill="url(#bgGlow)"/>
+            <rect width="900" height="420" fill="url(#dots)"/>
+            <ellipse cx="440" cy="252" rx="268" ry="80" fill="#48b7a7" opacity=".07" filter="url(#soft)"/>
+
+            <!-- dielectric -->
+            <rect id="dielectric" x="170" y="270" width="520" height="80" fill="#e6b45b" opacity=".045"/>
+            <rect id="dielectricHatch" x="170" y="270" width="520" height="80" fill="url(#hatch)"/>
+            <line id="dielectricLine" x1="172" y1="270" x2="688" y2="270" stroke="#e6b45b" stroke-width="1" opacity=".14"/>
+            <text id="epsLabel" x="686" y="292" text-anchor="end" font-family="Bahnschrift,Consolas,monospace" font-size="9" fill="#e6b45b" opacity=".55">εᵣ 1.00 · AIR</text>
+
+            <!-- field lines -->
+            <g id="fieldLines" filter="url(#glow)"></g>
+
+            <!-- charges -->
+            <g id="chargesMinus"></g>
+            <g id="chargesPlus"></g>
+
+            <!-- bottom plate -->
+            <g id="bottomPlate">
+              <polygon points="170,350 690,350 712,336 192,336" fill="url(#plateBottom)"/>
+              <rect x="170" y="350" width="520" height="16" rx="2" fill="url(#plateFace)"/>
+              <polygon points="690,350 712,336 712,352 690,366" fill="url(#plateSide)"/>
+              <line x1="176" y1="353" x2="684" y2="353" stroke="#9fe5d8" stroke-width="1" opacity=".28"/>
+              <circle cx="190" cy="358" r="2.4" fill="#0a3331" opacity=".65"/>
+              <circle cx="670" cy="358" r="2.4" fill="#0a3331" opacity=".65"/>
+            </g>
+
+            <!-- top plate -->
+            <g id="topPlate" class="plate-g">
+              <polygon points="170,0 690,0 712,-14 192,-14" fill="url(#plateTop)"/>
+              <rect x="170" y="0" width="520" height="16" rx="2" fill="url(#plateFace)"/>
+              <polygon points="690,0 712,-14 712,2 690,16" fill="url(#plateSide)"/>
+              <line x1="176" y1="3" x2="684" y2="3" stroke="#d7f6ef" stroke-width="1" opacity=".5"/>
+              <circle cx="190" cy="8" r="2.4" fill="#0a3331" opacity=".55"/>
+              <circle cx="670" cy="8" r="2.4" fill="#0a3331" opacity=".55"/>
+              <rect x="392" y="-3.5" width="76" height="7" rx="3.5" fill="#0d3533" opacity=".35"/>
+            </g>
+
+            <!-- S dimension -->
+            <g id="sDim">
+              <line x1="170" y1="0" x2="170" y2="-25" stroke="#9fc4bc" stroke-width="1" opacity=".55"/>
+              <line x1="690" y1="0" x2="690" y2="-25" stroke="#9fc4bc" stroke-width="1" opacity=".55"/>
+              <line id="sDimLine" x1="170" y1="-24" x2="690" y2="-24" stroke="#9fc4bc" stroke-width="1" opacity=".7" marker-start="url(#dimArrow)" marker-end="url(#dimArrow2)"/>
+              <rect x="382" y="-36" width="96" height="20" rx="10" fill="#153537" stroke="#2c5c59" stroke-width="1"/>
+              <text id="sDimText" x="430" y="-22.5" text-anchor="middle" font-family="Bahnschrift,Consolas,monospace" font-size="9" fill="#cde6df">S = 4.0 mm²</text>
+            </g>
+
+            <!-- gap dimension -->
+            <g id="dDim">
+              <line x1="748" y1="270" x2="766" y2="270" stroke="#9fc4bc" stroke-width="1" opacity=".5"/>
+              <line x1="748" y1="350" x2="766" y2="350" stroke="#9fc4bc" stroke-width="1" opacity=".5"/>
+              <line id="dDimLine" x1="756" y1="270" x2="756" y2="350" stroke="#a9c8c1" stroke-width="1.1" marker-start="url(#dimArrow)" marker-end="url(#dimArrow2)"/>
+              <rect id="dPill" x="700" y="298" width="112" height="24" rx="12" fill="#153537" stroke="#2c5c59" stroke-width="1"/>
+              <text id="dDimText" x="756" y="313" text-anchor="middle" font-family="Bahnschrift,Consolas,monospace" font-size="9.5" fill="#f7efdf">d = 100 µm</text>
+            </g>
+
+            <!-- motion arrow -->
+            <g id="motionArrow" opacity="0">
+              <line id="motionLine" x1="124" y1="270" x2="124" y2="310" stroke="#df5a3b" stroke-width="1.6" marker-end="url(#arrowField)"/>
+              <text id="motionText" x="116" y="294" text-anchor="end" font-family="Bahnschrift,Consolas,monospace" font-size="9" fill="#f4a58f">Δx</text>
+            </g>
+
+            <!-- Q tags -->
+            <g id="qTags">
+              <text id="plusTag" x="152" y="17" text-anchor="end" font-family="Bahnschrift,Consolas,monospace" font-size="11" fill="#ff9077">+Q</text>
+              <text id="minusTag" x="152" y="365" text-anchor="end" font-family="Bahnschrift,Consolas,monospace" font-size="11" fill="#68ded0">−Q</text>
+            </g>
+          </svg>
+          <div class="drag-hint"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16M8 8l4-4 4 4M8 16l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>拖动极板调节 d</div>
+        </div>
+        <div class="visual-foot">
+          <div class="legend">
+            <span><i class="plus"></i>正电荷</span>
+            <span><i class="minus"></i>负电荷</span>
+            <span><i class="field"></i>电场线</span>
+          </div>
+          <div class="eq">C = ε₀εᵣS / d &nbsp;·&nbsp; <b>E = V / d</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ READOUT ============ -->
+    <section class="panel panel--readout" aria-label="实时读数">
+      <div class="panel-head">
+        <div class="head-id"><span class="num">03</span><div><div class="panel-title">实时读数</div><div class="panel-sub">LIVE READOUT</div></div></div>
+        <span class="live" style="background:#f0eadf;color:#6f7f77;border-color:#ddd3c3"><i style="background:#1c9b8e"></i>LIVE</span>
+      </div>
+      <div class="readout-body">
+        <div class="big-readout">
+          <div class="big-k"><span>CAPACITANCE / 电容</span><span class="unit-hint">实时求解</span></div>
+          <div class="cap-line"><span class="cap-value" id="capValue">354</span><span class="cap-unit" id="capUnit">fF</span></div>
+          <div class="cap-sub" id="capSub">S = 4.0 mm² · d = 100 µm · εᵣ = 1.00</div>
+          <div class="cap-bar"><i id="capMarker"></i></div>
+          <div class="cap-scale"><span>0.01 pF</span><span>10 pF</span></div>
+        </div>
+
+        <div class="metrics">
+          <div class="metric"><div class="mk"><span>电荷 Q</span><span>CHARGE</span></div><div class="mv"><span id="mQ">1.77</span><small>pC</small></div></div>
+          <div class="metric"><div class="mk"><span>电压 V</span><span>VOLTAGE</span></div><div class="mv"><span id="mV">5.00</span><small>V</small></div></div>
+          <div class="metric"><div class="mk"><span>场强 E</span><span>FIELD</span></div><div class="mv"><span id="mE">50.0</span><small>kV/m</small></div></div>
+          <div class="metric"><div class="mk"><span>面电荷 σ</span><span>DENSITY</span></div><div class="mv"><span id="mSigma">0.443</span><small>µC/m²</small></div></div>
+          <div class="metric"><div class="mk"><span>储能 U</span><span>ENERGY</span></div><div class="mv"><span id="mU">4.43</span><small>pJ</small></div></div>
+          <div class="metric"><div class="mk"><span>灵敏度</span><span>∂C/∂d</span></div><div class="mv"><span id="mSens">3.54</span><small>fF/µm</small></div></div>
+        </div>
+
+        <div class="sensor-card">
+          <div class="sensor-top"><span class="sc-k">SENSOR FUSION / 位移反演</span><span class="sensor-badge">≤ 1 µm</span></div>
+          <div class="sensor-main">
+            <div class="dx-value"><span id="sensorDx">+0.0</span><small>µm</small></div>
+            <div class="sensor-state"><b id="sensorStatus">待激活</b><span id="sensorSub">切换到位移传感模式</span></div>
+          </div>
+          <div class="sensor-grid">
+            <div class="sg"><div class="k">ΔC</div><div class="v" id="sgDeltaC">0.00 pF</div></div>
+            <div class="sg"><div class="k">误差</div><div class="v" id="sgError">—</div></div>
+            <div class="sg"><div class="k">信噪比</div><div class="v" id="sgSnr">—</div></div>
+          </div>
+          <div class="sensor-chain">
+            <div class="sc-step"><span>尖端位移</span><b>Δx</b></div>
+            <i>›</i>
+            <div class="sc-step"><span>电容变化</span><b>ΔC</b></div>
+            <i>›</i>
+            <div class="sc-step"><span>读出电路</span><b>CDC</b></div>
+            <i>›</i>
+            <div class="sc-step"><span>数字反演</span><b>Δx′</b></div>
+          </div>
+          <div class="sensor-wave-wrap">
+            <span class="sw-label">LIVE TRACE / Δx′</span>
+            <canvas id="sensorWave"></canvas>
+          </div>
+          <div class="sensor-scale">
+            <div class="ss-top"><span>DISPLACEMENT / 位移标尺</span><span id="scaleRange">−80 … +300 µm</span></div>
+            <div class="ss-track"><div class="ss-ticks"></div><div class="ss-zero" id="ssZero"></div><i id="ssNeedle"></i></div>
+            <div class="ss-labels"><span id="ssMin">−80</span><span>0</span><span id="ssMax">+300 µm</span></div>
+          </div>
+          <div class="sensor-foot">
+            <label class="noise-toggle"><input type="checkbox" id="noiseToggle" checked><span class="switch"></span>模拟测量噪声 0.05%</label>
+            <span class="sensor-live-tag">● 实时反演中</span>
+          </div>
+          <div class="sensor-ghost" id="sensorGhost">
+            <svg class="ghost-icon" viewBox="0 0 48 48" fill="none"><path d="M24 5v13M24 30v13" stroke="#e6b45b" stroke-width="1.6" stroke-linecap="round" opacity=".7"/><rect x="14" y="18" width="20" height="3" rx="1.5" fill="#e6b45b" opacity=".85"/><rect x="14" y="27" width="20" height="3" rx="1.5" fill="#e6b45b" opacity=".55"/><path d="M9 23.5h5M34 23.5h5M9 34.5h5M34 34.5h5" stroke="#7fd8ca" stroke-width="1" stroke-linecap="round" opacity=".4"/><circle cx="24" cy="23.6" r="1.8" fill="#f7efdf"/></svg>
+            <p>固定 S 与 εᵣ，让一块极板随器械尖端移动。<br>板距的微小变化，会被电容放大成可测信号。</p>
+            <button class="activate-btn" id="ghostBtn">进入位移传感实验</button>
+          </div>
+        </div>
+        <div class="readout-tip"><i></i><span id="readoutTip">当前处于电容实验模式；切换模式可观察微米级位移反演。</span></div>
+      </div>
+    </section>
+
+    <!-- ============ GRAPH ============ -->
+    <section class="panel panel--graph" aria-label="电容与板间距关系曲线">
+      <div class="graph-panel">
+        <div class="graph-head">
+          <div class="head-id"><span class="num">04</span><div><div class="panel-title">C–d 特性曲线</div><div class="panel-sub">CHARACTERISTIC CURVE · LOG–LOG</div></div></div>
+          <div class="graph-tools">
+            <button class="mini-tab active" data-chart="c">C–d</button>
+            <button class="mini-tab" data-chart="sens">灵敏度</button>
+            <button class="icon-btn" id="recordBtn" title="记录当前数据点">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>记录
+            </button>
+            <button class="icon-btn" id="dataBtn" title="查看已记录数据">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span id="dataCount">0</span>
+            </button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart"></canvas>
+          <div class="chart-tip" id="chartTip"></div>
+        </div>
+        <div class="graph-foot">
+          <div class="graph-insight" id="graphInsight"><b>C ∝ 1/d：</b>板距加倍，电容减半。当前 d = 100 µm，C = 0.354 pF。</div>
+          <div class="graph-note"><span class="dot"></span><span id="graphNote">点击曲线可切换工作点</span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FORMULA STRIP ============ -->
+  <section class="formula-strip" aria-label="核心物理公式">
+    <div class="formula-intro">
+      <div>
+        <span class="num">05</span>
+        <h3>核心物理<br>CORE PHYSICS</h3>
+        <p>所有读数由解析式实时求解，不用查表、不做近似。</p>
+      </div>
+      <div class="f-code">C = ε₀·εᵣ·S / d</div>
+    </div>
+    <div class="formula-list">
+      <div class="formula-item">
+        <div class="fi-k"><span>01</span>电容 · CAPACITANCE</div>
+        <div class="fi-eq">C = <span class="frac"><span>ε₀ εᵣ S</span><span>d</span></span></div>
+        <div class="fi-desc">S 固定、介质不变时 <b>C 与 d 成反比</b>；d 减半，C 翻倍。</div>
+      </div>
+      <div class="formula-item">
+        <div class="fi-k"><span>02</span>场强 · FIELD</div>
+        <div class="fi-eq">E = <span class="frac"><span>V</span><span>d</span></span> = <span class="frac"><span>Q</span><span>ε₀ εᵣ S</span></span></div>
+        <div class="fi-desc">恒压时 E 随 d 反比变化；<b>恒电荷时 E 与 d 无关</b>。</div>
+      </div>
+      <div class="formula-item">
+        <div class="fi-k"><span>03</span>位移反演 · INVERSION</div>
+        <div class="fi-eq">Δx = d₀( <span class="frac"><span>C₀</span><span>C</span></span> − 1 )</div>
+        <div class="fi-desc">小位移下 <b>ΔC/C₀ ≈ −Δx/d₀</b>，把电容变化还原为位移。</div>
+      </div>
+    </div>
+    <div class="formula-cta">
+      <button class="cta-btn" id="reportBtn">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 3h9l4 4v14H6V3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12h6M9 16h6M14 3v5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        生成实验记录
+      </button>
+      <div class="cta-note">一键汇总参数、读数与作业结论</div>
+      <div class="cta-links">
+        <button id="copyQuick">复制结论</button>
+        <button id="downloadQuick">下载 .txt</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="page-foot">
+    <span>AI PHYSICS LAB · PARALLEL-PLATE CAPACITOR DIGITAL TWIN</span>
+    <span>教学演示模型 · 理想平行板近似 · 实时计算 60 fps</span>
+  </footer>
+</div>
+
+<!-- report modal -->
+<div class="modal" id="reportModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+    <div class="modal-head">
+      <div><div class="eyebrow">LAB REPORT / AUTO-GENERATED</div><h3 id="reportTitle">平行板电容器 · 数字孪生实验记录</h3><p>参数、读数与结论由当前实验状态自动生成 · 可直接粘贴到作业平台</p></div>
+      <button class="close-btn" data-close="reportModal" aria-label="关闭">×</button>
+    </div>
+    <div class="report-body" id="reportBody"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" data-close="reportModal">关闭</button>
+      <button class="btn-ghost" id="reportDownload">下载 .txt</button>
+      <button class="btn-solid" id="reportCopy">复制全文</button>
+    </div>
+  </div>
+</div>
+
+<!-- data modal -->
+<div class="modal" id="dataModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dataTitle">
+    <div class="modal-head">
+      <div><div class="eyebrow">EXPERIMENT LOG</div><h3 id="dataTitle">实验数据记录</h3><p>每次记录会保存当前工作点；可导出 CSV 在 Excel 中作图。</p></div>
+      <button class="close-btn" data-close="dataModal" aria-label="关闭">×</button>
+    </div>
+    <div class="report-body">
+      <div class="table-wrap"><table class="data-table" id="dataTable"></table></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="clearData">清空数据</button>
+      <button class="btn-ghost" id="exportCsv">导出 CSV</button>
+      <button class="btn-solid" data-close="dataModal">完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- guide modal -->
+<div class="modal" id="guideModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+    <div class="modal-head">
+      <div><div class="eyebrow">QUICK START</div><h3 id="guideTitle">三步完成实验</h3><p>建议按顺序操作，观察读数与曲线的同步变化。</p></div>
+      <button class="close-btn" data-close="guideModal" aria-label="关闭">×</button>
+    </div>
+    <div class="report-body">
+      <div class="rep-section"><div class="rep-h">STEP 01 · 改变板距</div><p class="rep-text">拖动左侧 <b>板间距 d</b> 滑块，或直接拖动剖面图中的上极板。观察 C 如何随 d 反向变化；开启“恒电荷”后再看 E 是否改变。</p></div>
+      <div class="rep-section"><div class="rep-h">STEP 02 · 更换介质</div><p class="rep-text">点击 PTFE / 玻璃 / 陶瓷，观察 εᵣ 增大时 C 成比例增大。固定 d 时，C 与 εᵣ 是线性关系。</p></div>
+      <div class="rep-section"><div class="rep-h">STEP 03 · 微位移反演</div><p class="rep-text">进入“位移传感”，用 Δx 滑块模拟器械尖端移动（单步 1 µm）。比较设定位移与反演位移，并记录至少 3 组数据。</p></div>
+      <div class="assistant" style="margin-top:14px"><div class="a-head">提示</div><p>剖面图下方的“记录”可保存数据；右下角“生成实验记录”会汇总当前参数、公式与作业结论。</p></div>
+    </div>
+    <div class="modal-actions"><button class="btn-solid" data-close="guideModal">开始实验</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="demoCursor"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------- constants & state ---------- */
+  const EPS0 = 8.8541878128e-12;
+  const D_MIN = 20, D_MAX = 2000;
+  const PLATE_X0 = 170, PLATE_X1 = 690, PLATE_W = PLATE_X1 - PLATE_X0;
+  const Y_BOTTOM = 350, PLATE_H = 16, GAP_MIN_PX = 58, GAP_MAX_PX = 212;
+  const DEFAULTS = { mode:'lab', drive:'voltage', S:4, d:100, epsR:1, V:5, QpC:1.77, dx:0, noise:true, chart:'c' };
+  const state = { ...DEFAULTS, records:[], scene:'micro', tasks:{d:false, drive:false, sensor:false} };
+
+  const $ = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+  const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+  const lerp = (a,b,t) => a + (b-a)*t;
+
+  const el = {
+    areaRange:$('#areaRange'), gapRange:$('#gapRange'), epsRange:$('#epsRange'),
+    voltRange:$('#voltRange'), chargeRange:$('#chargeRange'), dxRange:$('#dxRange'),
+    areaVal:$('#areaVal'), gapVal:$('#gapVal'), epsVal:$('#epsVal'), voltVal:$('#voltVal'),
+    chargeVal:$('#chargeVal'), dxVal:$('#dxVal'), gapLabel:$('#gapLabel'),
+    driveNote:$('#driveNote'), assistant:$('#assistantText'),
+    capValue:$('#capValue'), capUnit:$('#capUnit'), capSub:$('#capSub'), capMarker:$('#capMarker'),
+    mQ:$('#mQ'), mV:$('#mV'), mE:$('#mE'), mSigma:$('#mSigma'), mU:$('#mU'), mSens:$('#mSens'),
+    sensorDx:$('#sensorDx'), sensorStatus:$('#sensorStatus'), sensorSub:$('#sensorSub'),
+    sgDeltaC:$('#sgDeltaC'), sgError:$('#sgError'), sgSnr:$('#sgSnr'),
+    noiseToggle:$('#noiseToggle'), readoutTip:$('#readoutTip'),
+    ssNeedle:$('#ssNeedle'), ssZero:$('#ssZero'), ssMin:$('#ssMin'), ssMax:$('#ssMax'), scaleRange:$('#scaleRange'),
+    sensorWave:$('#sensorWave'),
+    topPlate:$('#topPlate'), fieldLines:$('#fieldLines'), chargesPlus:$('#chargesPlus'), chargesMinus:$('#chargesMinus'),
+    dielectric:$('#dielectric'), dielectricHatch:$('#dielectricHatch'), dielectricLine:$('#dielectricLine'), epsLabel:$('#epsLabel'),
+    sDim:$('#sDim'), sDimLine:$('#sDimLine'), sDimText:$('#sDimText'),
+    dDimLine:$('#dDimLine'), dPill:$('#dPill'), dDimText:$('#dDimText'),
+    motionArrow:$('#motionArrow'), motionLine:$('#motionLine'), motionText:$('#motionText'),
+    plusTag:$('#plusTag'), minusTag:$('#minusTag'),
+    chipS:$('#chipS'), chipD:$('#chipD'), chipEps:$('#chipEps'),
+    graphInsight:$('#graphInsight'), graphNote:$('#graphNote'),
+    chart:$('#chart'), chartTip:$('#chartTip'),
+    dataCount:$('#dataCount'), toast:$('#toast')
+  };
+
+  /* ---------- formatting ---------- */
+  function sig(v, n=3){
+    if (!isFinite(v)) return '—';
+    if (v === 0) return '0';
+    const a = Math.abs(v);
+    if (a >= 1000) return v.toFixed(Math.max(0, n-4));
+    if (a >= 100) return v.toFixed(Math.max(0, n-3));
+    if (a >= 10) return v.toFixed(Math.max(0, n-2));
+    if (a >= 1) return v.toFixed(Math.max(0, n-1));
+    return v.toFixed(Math.min(6, n));
+  }
+  function capFmt(C){
+    if (C >= 1e-6) return {v: sig(C*1e6, 3), u:'µF'};
+    if (C >= 1e-9) return {v: sig(C*1e9, 3), u:'nF'};
+    if (C >= 1e-12) return {v: sig(C*1e12, 3), u:'pF'};
+    return {v: sig(C*1e15, 3), u:'fF'};
+  }
+  function qFmt(Q){
+    if (Q >= 1e-6) return {v: sig(Q*1e6,3), u:'µC'};
+    if (Q >= 1e-9) return {v: sig(Q*1e9,3), u:'nC'};
+    return {v: sig(Q*1e12,3), u:'pC'};
+  }
+  function eFmt(E){
+    if (E >= 1e6) return {v: sig(E/1e6,3), u:'MV/m'};
+    if (E >= 1e3) return {v: sig(E/1e3,3), u:'kV/m'};
+    return {v: sig(E,3), u:'V/m'};
+  }
+  function uFmt(U){
+    if (U >= 1e-6) return {v: sig(U*1e6,3), u:'µJ'};
+    if (U >= 1e-9) return {v: sig(U*1e9,3), u:'nJ'};
+    return {v: sig(U*1e12,3), u:'pJ'};
+  }
+  function sigmaFmt(s){
+    if (s >= 1e-3) return {v: sig(s*1e3,3), u:'mC/m²'};
+    if (s >= 1e-7) return {v: sig(s*1e6,3), u:'µC/m²'};
+    return {v: sig(s*1e9,3), u:'nC/m²'};
+  }
+  function sensFmt(s){ // F/m -> display
+    const ffu = s * 1e-6 * 1e15;
+    if (ffu >= 1000) return {v: sig(ffu/1000,3), u:'pF/µm'};
+    return {v: sig(ffu,3), u:'fF/µm'};
+  }
+  function fmtDx(v){ return (v>=0?'+':'−') + Math.abs(v).toFixed(1); }
+  function setRangeFill(input){
+    const min = +input.min, max = +input.max, v = +input.value;
+    input.style.setProperty('--fill', ((v-min)/(max-min)*100) + '%');
+  }
+
+  /* ---------- physics ---------- */
+  function model(){
+    const S = state.S * 1e-6;               // mm² -> m²
+    const d0 = state.d * 1e-6;              // µm -> m
+    const dEffUm = state.mode === 'sensor' ? Math.max(2, state.d + state.dx) : state.d;
+    const d = dEffUm * 1e-6;
+    const C0 = EPS0 * state.epsR * S / d0;
+    const C = EPS0 * state.epsR * S / d;
+    let V, Q;
+    if (state.drive === 'voltage') { V = state.V; Q = C * V; }
+    else { Q = state.QpC * 1e-12; V = Q / C; }
+    const E = V / d;
+    const sigma = Q / S;
+    const U = 0.5 * C * V * V;
+    const sens = C / d;                     // F/m
+    const t = Math.floor(performance.now()/180)/10;
+    const n = (Math.sin(t*1.7) + 0.55*Math.sin(t*4.3+1.2) + 0.3*Math.sin(t*9.1))/1.85;
+    const noiseAmp = 0.0005;
+    const Cmeas = C * (1 + (state.noise ? noiseAmp*n : 0));
+    const dxEstUm = (d0 * (C0 / Cmeas - 1)) * 1e6;
+    const err = dxEstUm - state.dx;
+    const snr = state.noise ? Math.abs(C - C0)/(C*noiseAmp) : Infinity;
+    const resolution = state.noise ? noiseAmp * dEffUm : 0;
+    return { S,d0,d,dEffUm,C0,C,Cmeas,V,Q,E,sigma,U,sens,dxEstUm,err,snr,resolution };
+  }
+
+  /* ---------- visual ---------- */
+  function gapToPx(dUm){
+    const t = (Math.log(dUm) - Math.log(D_MIN)) / (Math.log(D_MAX) - Math.log(D_MIN));
+    return GAP_MIN_PX + t * (GAP_MAX_PX - GAP_MIN_PX);
+  }
+  function buildFieldLines(){
+    el.fieldLines.innerHTML = '';
+    const xs = [205, 255, 305, 355, 405, 455, 505, 555, 605, 655];
+    for (let i=0;i<xs.length;i++){
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', xs[i]); line.setAttribute('x2', xs[i]);
+      line.setAttribute('y1', 250); line.setAttribute('y2', 330);
+      line.setAttribute('stroke', '#e6b45b');
+      line.setAttribute('stroke-width', '1.4');
+      line.setAttribute('stroke-linecap','round');
+      line.setAttribute('marker-end','url(#arrowField)');
+      line.setAttribute('class','field-line');
+      line.style.animationDelay = (-i*0.17)+'s';
+      el.fieldLines.appendChild(line);
+    }
+  }
+  function buildCharges(){
+    el.chargesPlus.innerHTML = ''; el.chargesMinus.innerHTML = '';
+    const xs = [205, 255, 305, 355, 405, 455, 505, 555, 605, 655];
+    xs.forEach((x,i) => {
+      const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+      const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx',x); c.setAttribute('cy',0); c.setAttribute('r',9);
+      c.setAttribute('fill','#df5a3b'); c.setAttribute('opacity','.18');
+      c.setAttribute('stroke','#ff8b70'); c.setAttribute('stroke-width','1');
+      const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',x); t.setAttribute('y',3.2); t.setAttribute('text-anchor','middle');
+      t.setAttribute('font-family','Bahnschrift,Consolas,monospace'); t.setAttribute('font-size','9');
+      t.setAttribute('fill','#ffb5a3'); t.textContent = '+';
+      g.append(c,t); g.dataset.x = x; el.chargesPlus.appendChild(g);
+
+      const g2 = document.createElementNS('http://www.w3.org/2000/svg','g');
+      const c2 = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c2.setAttribute('cx',x); c2.setAttribute('cy',0); c2.setAttribute('r',9);
+      c2.setAttribute('fill','#1c9b8e'); c2.setAttribute('opacity','.16');
+      c2.setAttribute('stroke','#67ded0'); c2.setAttribute('stroke-width','1');
+      const t2 = document.createElementNS('http://www.w3.org/2000/svg','text');
+      t2.setAttribute('x',x); t2.setAttribute('y',3.2); t2.setAttribute('text-anchor','middle');
+      t2.setAttribute('font-family','Bahnschrift,Consolas,monospace'); t2.setAttribute('font-size','9');
+      t2.setAttribute('fill','#9aeee2'); t2.textContent = '−';
+      g2.append(c2,t2); g2.dataset.x = x; el.chargesMinus.appendChild(g2);
+    });
+  }
+  let lastTopY = 270;
+  function renderVisual(m){
+    const gap = gapToPx(m.dEffUm);
+    const topY = Y_BOTTOM - PLATE_H - gap;
+    lastTopY = topY;
+    el.topPlate.setAttribute('transform', `translate(0 ${topY})`);
+    // dimension S moves with plate
+    el.sDim.setAttribute('transform', `translate(0 ${topY})`);
+    // field lines & charges
+    const y1 = topY + PLATE_H + 13;
+    const y2 = Y_BOTTOM - 13;
+    $$('line', el.fieldLines).forEach(line => {
+      line.setAttribute('y1', y1); line.setAttribute('y2', y2);
+      const rel = clamp(m.E / 120000, 0.15, 1);
+      line.setAttribute('stroke-width', (1.1 + rel*1.5).toFixed(2));
+      line.setAttribute('opacity', (0.32 + rel*0.5).toFixed(2));
+    });
+    const qNorm = clamp((m.Q*1e9)/8, 0.18, 1);
+    $$('g', el.chargesPlus).forEach(g => { g.setAttribute('transform', `translate(0 ${y1})`); g.setAttribute('opacity', (0.55+qNorm*0.45).toFixed(2)); });
+    $$('g', el.chargesMinus).forEach(g => { g.setAttribute('transform', `translate(0 ${y2})`); g.setAttribute('opacity', (0.55+qNorm*0.45).toFixed(2)); });
+    // dielectric
+    const yTopGap = topY + PLATE_H;
+    el.dielectric.setAttribute('y', yTopGap); el.dielectric.setAttribute('height', Math.max(0, Y_BOTTOM-yTopGap));
+    el.dielectricHatch.setAttribute('y', yTopGap); el.dielectricHatch.setAttribute('height', Math.max(0, Y_BOTTOM-yTopGap));
+    el.dielectricLine.setAttribute('y1', yTopGap); el.dielectricLine.setAttribute('y2', yTopGap);
+    el.epsLabel.setAttribute('y', yTopGap + 16);
+    el.epsLabel.textContent = `εᵣ ${state.epsR.toFixed(2)} · ${materialName(state.epsR)}`;
+    // gap dimension
+    el.dDimLine.setAttribute('y1', yTopGap); el.dDimLine.setAttribute('y2', Y_BOTTOM);
+    const mid = (yTopGap + Y_BOTTOM)/2;
+    el.dPill.setAttribute('y', mid-12);
+    el.dDimText.setAttribute('y', mid+4);
+    el.dDimText.textContent = `d = ${m.dEffUm.toFixed(0)} µm`;
+    // S label
+    el.sDimText.textContent = `S = ${state.S.toFixed(1)} mm²`;
+    // motion arrow sensor
+    if (state.mode === 'sensor' && Math.abs(state.dx) > 0.01){
+      const len = clamp(18 + Math.abs(state.dx)*0.28, 22, 52);
+      const dir = state.dx >= 0 ? 1 : -1;
+      el.motionArrow.setAttribute('opacity','1');
+      el.motionLine.setAttribute('x1',124); el.motionLine.setAttribute('x2',124);
+      el.motionLine.setAttribute('y1', yTopGap - 4);
+      el.motionLine.setAttribute('y2', yTopGap - 4 - dir*len);
+      el.motionLine.setAttribute('marker-end','url(#arrowField)');
+      el.motionText.setAttribute('x', 116);
+      el.motionText.setAttribute('y', yTopGap + (dir>0?-12:16));
+      el.motionText.textContent = `Δx ${state.dx>0?'+':''}${state.dx} µm`;
+    } else el.motionArrow.setAttribute('opacity','0');
+    // tags
+    el.plusTag.setAttribute('y', topY - 7);
+    el.minusTag.setAttribute('y', Y_BOTTOM + 31);
+  }
+
+  function materialName(eps){
+    if (eps < 1.15) return 'AIR';
+    if (eps < 2.8) return 'PTFE';
+    if (eps < 6.5) return 'GLASS';
+    return 'CERAMIC';
+  }
+
+  /* ---------- render readouts ---------- */
+  function render(){
+    const m = model();
+    // values
+    const cap = capFmt(m.C);
+    el.capValue.textContent = cap.v;
+    el.capUnit.textContent = cap.u;
+    el.capSub.textContent = `S = ${state.S.toFixed(1)} mm² · d = ${m.dEffUm.toFixed(0)} µm · εᵣ = ${state.epsR.toFixed(2)}`;
+    const q = qFmt(m.Q), e = eFmt(m.E), u = uFmt(m.U), sg = sigmaFmt(m.sigma), se = sensFmt(m.sens);
+    el.mQ.textContent = q.v; el.mQ.nextElementSibling.textContent = q.u;
+    el.mV.textContent = sig(m.V,3);
+    el.mE.textContent = e.v; el.mE.nextElementSibling.textContent = e.u;
+    el.mSigma.textContent = sg.v; el.mSigma.nextElementSibling.textContent = sg.u;
+    el.mU.textContent = u.v; el.mU.nextElementSibling.textContent = u.u;
+    el.mSens.textContent = se.v; el.mSens.nextElementSibling.textContent = se.u;
+    const logC = (Math.log10(clamp(m.C*1e12,0.01)) - Math.log10(0.01)) / (Math.log10(10)-Math.log10(0.01));
+    el.capMarker.style.left = (clamp(logC,0,1)*100).toFixed(1)+'%';
+    // chips
+    el.chipS.textContent = `${state.S.toFixed(1)} mm²`;
+    el.chipD.textContent = `${m.dEffUm.toFixed(0)} µm`;
+    el.chipEps.textContent = state.epsR.toFixed(2);
+    // labels
+    el.areaVal.textContent = `${state.S.toFixed(1)} mm²`;
+    el.gapVal.textContent = `${state.d} µm`;
+    el.epsVal.textContent = state.epsR.toFixed(2);
+    el.voltVal.textContent = state.V.toFixed(1)+' V';
+    el.chargeVal.textContent = state.QpC.toFixed(2)+' pC';
+    el.dxVal.textContent = fmtDx(state.dx)+' µm';
+    el.gapLabel.innerHTML = state.mode==='sensor' ? '基准间距 <em>d₀</em>' : '板间距 <em>d</em>';
+    setRangeFill(el.areaRange); setRangeFill(el.gapRange); setRangeFill(el.epsRange);
+    setRangeFill(el.voltRange); setRangeFill(el.chargeRange); setRangeFill(el.dxRange);
+    // sensor
+    const active = state.mode==='sensor';
+    if (active){
+      el.sensorDx.textContent = fmtDx(m.dxEstUm);
+      el.sensorStatus.textContent = '实时反演';
+      el.sensorSub.textContent = `设定 Δx = ${fmtDx(state.dx)} µm`;
+      el.sgDeltaC.textContent = `${(m.C-m.C0>=0?'+':'−')}${sig(Math.abs(m.C-m.C0)*1e12,3)} pF`;
+      el.sgError.textContent = state.noise ? `±${Math.abs(m.err).toFixed(2)} µm` : '0.00 µm';
+      el.sgSnr.textContent = isFinite(m.snr) ? `${sig(m.snr,3)}×` : '∞';
+      el.readoutTip.textContent = `反演精度约 ${m.resolution.toFixed(2)} µm；测量噪声开启时数值会轻微抖动。`;
+      const min = +el.dxRange.min, max = +el.dxRange.max;
+      const pct = clamp((state.dx-min)/(max-min),0,1)*100;
+      el.ssNeedle.style.left = pct+'%';
+      el.ssZero.style.left = clamp((0-min)/(max-min),0,1)*100+'%';
+      el.ssMin.textContent = (min<0?'−':'')+Math.abs(min);
+      el.ssMax.textContent = '+'+max+' µm';
+      el.scaleRange.textContent = `${min} … +${max} µm`;
+      drawSensorTrace();
+      document.body.classList.add('mode-sensor');
+    } else {
+      el.sensorDx.textContent = '+0.0';
+      el.sensorStatus.textContent = '待激活';
+      el.sensorSub.textContent = '切换到位移传感模式';
+      el.sgDeltaC.textContent = '0.00 pF';
+      el.sgError.textContent = '—';
+      el.sgSnr.textContent = '—';
+      el.readoutTip.textContent = '当前处于电容实验模式；切换模式可观察微米级位移反演。';
+      document.body.classList.remove('mode-sensor');
+    }
+    // drive UI
+    el.driveNote.innerHTML = state.drive==='voltage'
+      ? '电压恒定：d 增大 → C 减小 → Q 随之减小。'
+      : '电荷恒定：d 增大 → C 减小 → V 升高，<b>E 保持不变</b>。';
+    // assistant
+    el.assistant.innerHTML = assistantText(m);
+    // graph & visual
+    renderVisual(m);
+    drawChart(m);
+    updateTasks();
+    return m;
+  }
+
+  function assistantText(m){
+    if (state.mode === 'sensor'){
+      const s = sensFmt(m.sens);
+      const pct = Math.abs(state.dx)/state.d*100;
+      return `当前灵敏度 <b>${s.v} ${s.u}</b>；${Math.abs(state.dx)} µm 位移使 C 变化 <b>${((m.C-m.C0)/m.C0*100).toFixed(2)}%</b>。小位移近似在 Δx/d₀ < 10% 时最可靠。`;
+    }
+    if (state.drive === 'charge'){
+      return `恒电荷模式下 E = Q/(ε₀εᵣS) 与 d 无关；拖动板距，观察场强读数是否保持不变。`;
+    }
+    if (state.d <= 35) return `板距已接近工艺下限。C 与灵敏度快速上升，但需同时考虑介电击穿、极板平行度与挤压膜阻尼。`;
+    return `保持 S、εᵣ 不变时，d 减半，C 精确翻倍。当前 ${m.dEffUm.toFixed(0)} µm 下的灵敏度约为 <b>${sensFmt(m.sens).v} ${sensFmt(m.sens).u}</b>。`;
+  }
+
+  /* ---------- graph ---------- */
+  let chartGeom = null;
+  const sensorTrace = [];
+  function drawSensorTrace(){
+    const canvas = el.sensorWave;
+    if (!canvas || !canvas.parentElement.clientWidth) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = canvas.parentElement.clientWidth, H = canvas.parentElement.clientHeight;
+    if (canvas.width !== Math.round(W*dpr) || canvas.height !== Math.round(H*dpr)){
+      canvas.width = Math.round(W*dpr); canvas.height = Math.round(H*dpr);
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle = 'rgba(247,239,223,.06)'; ctx.lineWidth = 1;
+    for (let i=1;i<4;i++){ const y=H*i/4; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    const vals = sensorTrace.length ? sensorTrace : [0];
+    let lo = Math.min(...vals), hi = Math.max(...vals);
+    const pad = Math.max(0.6, (hi-lo)*0.35, Math.abs(state.dx)*0.015);
+    lo -= pad; hi += pad;
+    const yOf = v => H-9 - (v-lo)/(hi-lo)*(H-20);
+    const xOf = i => 5 + (i/Math.max(1,vals.length-1))*(W-10);
+    // zero guide
+    if (lo < 0 && hi > 0){
+      ctx.setLineDash([2,3]); ctx.strokeStyle='rgba(230,180,91,.22)'; ctx.beginPath(); ctx.moveTo(0,yOf(0)); ctx.lineTo(W,yOf(0)); ctx.stroke(); ctx.setLineDash([]);
+    }
+    // fill
+    ctx.beginPath();
+    vals.forEach((v,i)=>{ const x=xOf(i), y=yOf(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.lineTo(xOf(vals.length-1),H); ctx.lineTo(xOf(0),H); ctx.closePath();
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'rgba(230,180,91,.20)'); g.addColorStop(1,'rgba(230,180,91,0)');
+    ctx.fillStyle=g; ctx.fill();
+    // trace
+    ctx.beginPath();
+    vals.forEach((v,i)=>{ const x=xOf(i), y=yOf(v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle='#e6b45b'; ctx.lineWidth=1.4; ctx.lineJoin='round'; ctx.stroke();
+    const lastX=xOf(vals.length-1), lastY=yOf(vals[vals.length-1]);
+    ctx.beginPath(); ctx.arc(lastX,lastY,2.4,0,Math.PI*2); ctx.fillStyle='#f7efdf'; ctx.fill();
+  }
+  function sampleSensorTrace(){
+    if (state.mode !== 'sensor') return;
+    const m = model();
+    sensorTrace.push(m.dxEstUm);
+    if (sensorTrace.length > 56) sensorTrace.shift();
+    drawSensorTrace();
+  }
+  function drawChart(m){
+    const canvas = el.chart;
+    const wrap = canvas.parentElement;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const W = wrap.clientWidth, H = wrap.clientHeight;
+    if (!W || !H) return;
+    if (canvas.width !== Math.round(W*dpr) || canvas.height !== Math.round(H*dpr)){
+      canvas.width = Math.round(W*dpr); canvas.height = Math.round(H*dpr);
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,W,H);
+    const pad = {l:44, r:16, t:12, b:26};
+    const pw = W-pad.l-pad.r, ph = H-pad.t-pad.b;
+    const dMin = D_MIN, dMax = D_MAX;
+    const xOf = d => pad.l + (Math.log10(d)-Math.log10(dMin))/(Math.log10(dMax)-Math.log10(dMin))*pw;
+    const isC = state.chart === 'c';
+    const S = state.S*1e-6;
+    const values = [];
+    const N = 180;
+    for (let i=0;i<=N;i++){
+      const d = dMin * Math.pow(dMax/dMin, i/N);
+      const C = EPS0*state.epsR*S/(d*1e-6);
+      values.push({d, v: isC ? C*1e12 : (C/(d*1e-6))*1e-6*1e15});
+    }
+    const vals = values.map(p=>p.v);
+    let yMin = Math.min(...vals), yMax = Math.max(...vals);
+    yMin = Math.pow(10, Math.floor(Math.log10(yMin)));
+    yMax = Math.pow(10, Math.ceil(Math.log10(yMax)));
+    if (yMin === yMax) { yMin/=10; yMax*=10; }
+    const yOf = v => pad.t + (1 - (Math.log10(v)-Math.log10(yMin))/(Math.log10(yMax)-Math.log10(yMin)))*ph;
+    chartGeom = {pad, W, H, pw, ph, xOf, yOf, yMin, yMax, isC};
+    // grid x
+    ctx.font = '8px Bahnschrift, Consolas, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    const xTicks = [20,50,100,200,500,1000,2000];
+    xTicks.forEach(t=>{
+      const x = xOf(t);
+      ctx.strokeStyle = 'rgba(24,49,47,.08)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,pad.t+ph); ctx.stroke();
+      ctx.fillStyle = '#9a9284'; ctx.fillText(String(t), x, pad.t+ph+7);
+    });
+    // grid y + labels with units
+    const decades = [];
+    for (let e=Math.log10(yMin); e<=Math.log10(yMax)+1e-9; e+=1) decades.push(Math.pow(10,e));
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    decades.forEach(v=>{
+      const y = yOf(v);
+      if (y < pad.t-1 || y > pad.t+ph+1) return;
+      ctx.strokeStyle = 'rgba(24,49,47,.075)'; ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+pw,y); ctx.stroke();
+      ctx.fillStyle = '#9a9284';
+      const label = isC ? (v>=1 ? v.toFixed(0) : v.toFixed(2)) : (v>=1000 ? (v/1000)+'k' : v.toFixed(0));
+      ctx.fillText(label, pad.l-7, y);
+    });
+    // axis titles
+    ctx.fillStyle = '#7c8b83'; ctx.font = '8px Bahnschrift, Consolas, monospace';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('d / µm  ·  LOG', pad.l, pad.t+ph+14);
+    ctx.save(); ctx.translate(10, pad.t+ph/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(isC ? 'C / pF' : '|∂C/∂d| / fF·µm⁻¹', 0, 0); ctx.restore();
+    // area fill
+    ctx.beginPath();
+    values.forEach((p,i)=>{ const x=xOf(p.d), y=yOf(p.v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.lineTo(xOf(dMax), pad.t+ph); ctx.lineTo(xOf(dMin), pad.t+ph); ctx.closePath();
+    const grad = ctx.createLinearGradient(0,pad.t,0,pad.t+ph);
+    grad.addColorStop(0, isC?'rgba(223,90,59,.13)':'rgba(12,107,99,.14)');
+    grad.addColorStop(1, 'rgba(223,90,59,0)');
+    ctx.fillStyle = grad; ctx.fill();
+    // curve
+    ctx.beginPath();
+    values.forEach((p,i)=>{ const x=xOf(p.d), y=yOf(p.v); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle = isC ? '#df5a3b' : '#0c6b63'; ctx.lineWidth = 2; ctx.lineJoin='round'; ctx.stroke();
+    // current marker
+    const dCur = clamp(m.dEffUm, dMin, dMax);
+    const Ccur = EPS0*state.epsR*S/(dCur*1e-6);
+    const vCur = isC ? Ccur*1e12 : (Ccur/(dCur*1e-6))*1e-6*1e15;
+    const xc = xOf(dCur), yc = yOf(vCur);
+    ctx.setLineDash([3,4]); ctx.strokeStyle='rgba(24,49,47,.32)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(xc,pad.t); ctx.lineTo(xc,pad.t+ph); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(xc,yc,7,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(xc,yc,4.2,0,Math.PI*2); ctx.fillStyle= isC?'#df5a3b':'#0c6b63'; ctx.fill();
+    // marker label
+    const label = isC ? `${capFmt(Ccur).v} ${capFmt(Ccur).u}` : `${sensFmt(Ccur/(dCur*1e-6)).v} ${sensFmt(Ccur/(dCur*1e-6)).u}`;
+    ctx.font = '600 8.5px Bahnschrift, Consolas, monospace';
+    const tw = ctx.measureText(label).width + 12;
+    let bx = xc + 8; if (bx+tw > pad.l+pw) bx = xc - tw - 8;
+    let by = clamp(yc - 24, pad.t+2, pad.t+ph-20);
+    ctx.fillStyle = '#18312f';
+    roundRect(ctx,bx,by,tw,17,4); ctx.fill();
+    ctx.fillStyle = '#f7efdf'; ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(label,bx+6,by+8.6);
+    // footer text
+    if (isC){
+      el.graphInsight.innerHTML = `<b>C ∝ 1/d：</b>板距加倍，电容减半。当前 d = ${m.dEffUm.toFixed(0)} µm，C = ${capFmt(m.C).v} ${capFmt(m.C).u}。`;
+      el.graphNote.textContent = state.mode==='lab' ? '点击曲线可切换工作点' : 'Δx 改变时工作点同步移动';
+    } else {
+      el.graphInsight.innerHTML = `<b>|∂C/∂d| = C/d：</b>板距越小，灵敏度越高；双对数斜率约为 −2。`;
+      el.graphNote.textContent = '纵轴单位 fF/µm';
+    }
+  }
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+
+  /* ---------- interactions ---------- */
+  let renderQueued = false;
+  function scheduleRender(){
+    if (renderQueued) return;
+    renderQueued = true;
+    requestAnimationFrame(()=>{ renderQueued=false; render(); });
+  }
+  function markTask(key){
+    if (!state.tasks[key]){ state.tasks[key]=true; updateTasks(); }
+  }
+  function updateTasks(){
+    const vals = [state.tasks.d, state.tasks.drive, state.tasks.sensor];
+    $$('#taskDots i').forEach((d,i)=>d.classList.toggle('on', vals[i]));
+    $$('.task-item').forEach(item=>item.classList.toggle('done', !!state.tasks[item.dataset.task]));
+    $('#taskText').textContent = `探索进度 ${vals.filter(Boolean).length} / 3`;
+  }
+
+  function setMode(mode){
+    state.mode = mode;
+    if (mode === 'sensor'){
+      state.dx = 0;
+      el.dxRange.value = 0;
+      state.tasks.sensor = true;
+      refreshDxRange();
+    }
+    $$('.mode-tab').forEach(b=>{ const on=b.dataset.mode===mode; b.classList.toggle('active',on); b.setAttribute('aria-selected',on); });
+    document.body.classList.toggle('mode-sensor', mode==='sensor');
+    scheduleRender();
+  }
+  function refreshDxRange(){
+    const min = -Math.min(80, Math.floor(state.d*0.8));
+    const max = Math.min(500, Math.max(20, Math.floor(state.d*2.5)));
+    el.dxRange.min = min; el.dxRange.max = max;
+    if (+el.dxRange.value < min) el.dxRange.value = min;
+    if (+el.dxRange.value > max) el.dxRange.value = max;
+    state.dx = +el.dxRange.value;
+    $('#dxMin').textContent = '−'+Math.abs(min);
+    $('#dxMax').textContent = '+'+max+' µm';
+  }
+  function setDrive(drive){
+    if (drive === state.drive) return;
+    if (drive === 'charge'){
+      const m = model(); state.QpC = clamp(m.Q*1e12, 0.01, 100);
+      el.chargeRange.value = state.QpC.toFixed(2);
+    } else {
+      const m = model(); state.V = clamp(m.V, 0.1, 30);
+      el.voltRange.value = state.V.toFixed(1);
+    }
+    state.drive = drive;
+    $$('#driveSeg button').forEach(b=>b.classList.toggle('active', b.dataset.drive===drive));
+    $('#voltageControl').hidden = drive!=='voltage';
+    $('#chargeControl').hidden = drive!=='charge';
+    state.tasks.drive = true;
+    scheduleRender();
+  }
+  function applyScene(scene){
+    state.scene = scene;
+    const presets = {
+      teach:{S:20,d:1000,epsR:1,V:10,mode:'lab'},
+      micro:{S:4,d:100,epsR:1,V:5,mode:'sensor'},
+      sensitive:{S:10,d:30,epsR:9.5,V:2,mode:'lab'}
+    };
+    const p = presets[scene]; if (!p) return;
+    state.S=p.S; state.d=p.d; state.epsR=p.epsR; state.V=p.V; state.drive='voltage'; state.dx=0;
+    el.areaRange.value=p.S; el.gapRange.value=p.d; el.epsRange.value=p.epsR; el.voltRange.value=p.V; el.dxRange.value=0;
+    $$('#driveSeg button').forEach(b=>b.classList.toggle('active', b.dataset.drive==='voltage'));
+    $('#voltageControl').hidden=false; $('#chargeControl').hidden=true;
+    setMode(p.mode);
+    $$('.chip[data-scene]').forEach(b=>b.classList.toggle('active', b.dataset.scene===scene));
+    refreshDxRange(); scheduleRender();
+  }
+  function setEps(v){
+    state.epsR = clamp(v,1,12);
+    el.epsRange.value = state.epsR;
+    $$('.mat').forEach(b=>b.classList.toggle('active', Math.abs(+b.dataset.eps-state.epsR)<0.06));
+    scheduleRender();
+  }
+
+  // sliders
+  el.areaRange.addEventListener('input', e=>{ state.S=+e.target.value; scheduleRender(); });
+  el.gapRange.addEventListener('input', e=>{ state.d=+e.target.value; state.tasks.d=true; refreshDxRange(); scheduleRender(); });
+  el.epsRange.addEventListener('input', e=>{ setEps(+e.target.value); });
+  el.voltRange.addEventListener('input', e=>{ state.V=+e.target.value; scheduleRender(); });
+  el.chargeRange.addEventListener('input', e=>{ state.QpC=+e.target.value; scheduleRender(); });
+  el.dxRange.addEventListener('input', e=>{ state.dx=+e.target.value; scheduleRender(); });
+  el.noiseToggle.addEventListener('change', e=>{ state.noise=e.target.checked; scheduleRender(); });
+  $('#dxMinus').addEventListener('click', ()=>{ state.dx=clamp(state.dx-1,+el.dxRange.min,+el.dxRange.max); el.dxRange.value=state.dx; scheduleRender(); });
+  $('#dxPlus').addEventListener('click', ()=>{ state.dx=clamp(state.dx+1,+el.dxRange.min,+el.dxRange.max); el.dxRange.value=state.dx; scheduleRender(); });
+
+  $$('.mode-tab').forEach(b=>b.addEventListener('click', ()=>setMode(b.dataset.mode)));
+  $$('#driveSeg button').forEach(b=>b.addEventListener('click', ()=>setDrive(b.dataset.drive)));
+  $$('.chip[data-scene]').forEach(b=>b.addEventListener('click', ()=>applyScene(b.dataset.scene)));
+  $$('.mat').forEach(b=>b.addEventListener('click', ()=>setEps(+b.dataset.eps)));
+  $$('.mini-tab[data-chart]').forEach(b=>b.addEventListener('click', ()=>{
+    $$('.mini-tab[data-chart]').forEach(x=>x.classList.toggle('active',x===b));
+    state.chart=b.dataset.chart; scheduleRender();
+  }));
+  $('#ghostBtn').addEventListener('click', ()=>setMode('sensor'));
+  $('#resetBtn').addEventListener('click', ()=>{
+    Object.assign(state, DEFAULTS, {records:[],tasks:{d:false,drive:false,sensor:false},scene:'micro'});
+    el.areaRange.value=4; el.gapRange.value=100; el.epsRange.value=1; el.voltRange.value=5; el.chargeRange.value=1.77; el.dxRange.value=0;
+    $$('#driveSeg button').forEach(b=>b.classList.toggle('active',b.dataset.drive==='voltage'));
+    $('#voltageControl').hidden=false; $('#chargeControl').hidden=true;
+    $$('.chip[data-scene]').forEach(b=>b.classList.toggle('active',b.dataset.scene==='micro'));
+    $$('.mat').forEach(b=>b.classList.toggle('active',b.dataset.eps==='1.00'));
+    setMode('lab'); refreshDxRange(); renderDataTable(); scheduleRender(); toast('已恢复默认参数');
+  });
+
+  // graph hover / click
+  el.chart.addEventListener('pointermove', ev=>{
+    if (!chartGeom) return;
+    const r = el.chart.getBoundingClientRect();
+    const x = ev.clientX-r.left;
+    const {pad,pw,xOf} = chartGeom;
+    if (x<pad.l-4 || x>pad.l+pw+4) { el.chartTip.classList.remove('on'); return; }
+    let lo=20, hi=2000;
+    for (let i=0;i<30;i++){ const mid=(lo+hi)/2; (xOf(mid)<x)?lo=mid:hi=mid; }
+    const d = (lo+hi)/2;
+    const C = EPS0*state.epsR*state.S*1e-6/(d*1e-6);
+    const isC = chartGeom.isC;
+    const v = isC ? C*1e12 : (C/(d*1e-6))*1e-6*1e15;
+    el.chartTip.textContent = `d ${d.toFixed(0)} µm · ${isC ? v.toFixed(1)+' pF' : v.toFixed(0)+' fF/µm'}`;
+    el.chartTip.style.left = x+'px';
+    el.chartTip.style.top = (ev.clientY-r.top)+'px';
+    el.chartTip.classList.add('on');
+  });
+  el.chart.addEventListener('pointerleave', ()=>el.chartTip.classList.remove('on'));
+  el.chart.addEventListener('click', ev=>{
+    if (state.mode!=='lab' || !chartGeom) return;
+    const r = el.chart.getBoundingClientRect();
+    const x = ev.clientX-r.left;
+    const {pad,pw,xOf} = chartGeom;
+    if (x<pad.l || x>pad.l+pw) return;
+    let lo=20, hi=2000;
+    for (let i=0;i<30;i++){ const mid=(lo+hi)/2; (xOf(mid)<x)?lo=mid:hi=mid; }
+    state.d = Math.round((lo+hi)/2);
+    el.gapRange.value = state.d;
+    state.tasks.d=true; refreshDxRange(); scheduleRender();
+  });
+
+  // drag top plate
+  (()=>{
+    let dragging=false, startY=0, startD=100;
+    const svg = $('#scene');
+    function svgY(ev){
+      const pt = svg.createSVGPoint(); pt.x=ev.clientX; pt.y=ev.clientY;
+      const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+      return p.y;
+    }
+    el.topPlate.addEventListener('pointerdown', ev=>{
+      if (state.mode==='sensor') return;
+      dragging=true; startY=svgY(ev); startD=state.d;
+      el.topPlate.setPointerCapture(ev.pointerId);
+      ev.preventDefault();
+    });
+    el.topPlate.addEventListener('pointermove', ev=>{
+      if (!dragging) return;
+      const dy = svgY(ev)-startY;
+      // dragging up increases gap
+      const d = clamp(startD * Math.exp(dy/100), D_MIN, D_MAX);
+      state.d = Math.round(d);
+      el.gapRange.value = state.d;
+      state.tasks.d=true;
+      refreshDxRange(); scheduleRender();
+    });
+    const end = ev=>{ if(dragging){dragging=false; try{el.topPlate.releasePointerCapture(ev.pointerId)}catch(e){}} };
+    el.topPlate.addEventListener('pointerup', end);
+    el.topPlate.addEventListener('pointercancel', end);
+  })();
+
+  // data records
+  function recordData(silent=false){
+    const m = model();
+    if (state.records.length >= 12) state.records.shift();
+    state.records.push({
+      no: state.records.length ? Math.max(...state.records.map(r=>r.no))+1 : 1,
+      mode: state.mode,
+      d: m.dEffUm,
+      dx: state.mode==='sensor' ? state.dx : null,
+      C: m.C*1e15,
+      Q: m.Q*1e12,
+      E: m.E/1e3,
+      note: state.drive==='voltage'?'恒压':'恒电荷'
+    });
+    el.dataCount.textContent = state.records.length;
+    renderDataTable();
+    if (!silent) toast(`已记录第 ${state.records.length} 组数据`);
+  }
+  function renderDataTable(){
+    el.dataCount.textContent = state.records.length;
+    const t = $('#dataTable');
+    if (!state.records.length){ t.innerHTML = '<tr><td><div class="empty">还没有数据点。点击曲线区域的“记录”按钮保存当前工作点。</div></td></tr>'; return; }
+    let html = '<thead><tr><th>#</th><th>d / µm</th><th>Δx / µm</th><th>C / fF</th><th>Q / pC</th><th>E / kV·m⁻¹</th><th>模式</th></tr></thead><tbody>';
+    state.records.forEach(r=>{
+      html += `<tr><td>${r.no}</td><td>${r.d.toFixed(0)}</td><td>${r.dx===null?'—':(r.dx>0?'+':'')+r.dx}</td><td>${r.C.toFixed(1)}</td><td>${r.Q.toFixed(3)}</td><td>${r.E.toFixed(1)}</td><td>${r.note}</td></tr>`;
+    });
+    html += '</tbody>';
+    t.innerHTML = html;
+  }
+  $('#recordBtn').addEventListener('click', ()=>recordData());
+  $('#dataBtn').addEventListener('click', ()=>{ renderDataTable(); openModal('dataModal'); });
+  $('#clearData').addEventListener('click', ()=>{ state.records=[]; renderDataTable(); toast('数据已清空'); });
+  $('#exportCsv').addEventListener('click', ()=>{
+    if (!state.records.length){ toast('暂无数据可导出'); return; }
+    const rows = [['no','d_um','dx_um','C_fF','Q_pC','E_kV_per_m','mode']].concat(state.records.map(r=>[r.no,r.d.toFixed(0),r.dx===null?'':r.dx,r.C.toFixed(1),r.Q.toFixed(3),r.E.toFixed(2),r.note]));
+    const csv = '\ufeff'+rows.map(r=>r.join(',')).join('\r\n');
+    downloadFile('capacitor_data.csv', csv, 'text/csv;charset=utf-8');
+    toast('CSV 已导出');
+  });
+
+  /* ---------- report ---------- */
+  function reportText(){
+    const m = model();
+    const cap = capFmt(m.C), q=qFmt(m.Q), e=eFmt(m.E), u=uFmt(m.U), sg=sigmaFmt(m.sigma), se=sensFmt(m.sens);
+    const stamp = '2026 秋 · 实时生成';
+    const modeTxt = state.mode==='sensor' ? '微位移传感' : '电容实验';
+    const driveTxt = state.drive==='voltage' ? '恒压源' : '恒电荷';
+    return `平行板电容器 · 数字孪生实验记录
+生成时间：${stamp}
+实验模式：${modeTxt} / ${driveTxt}
+
+一、实验条件
+极板面积 S = ${state.S.toFixed(1)} mm²
+板间距 d = ${m.dEffUm.toFixed(0)} µm${state.mode==='sensor'?`（基准 d₀ = ${state.d} µm，Δx = ${fmtDx(state.dx)} µm）`:''}
+相对介电常数 εᵣ = ${state.epsR.toFixed(2)}
+${state.drive==='voltage'?`极板电压 V = ${state.V.toFixed(1)} V`:`极板电荷 Q = ${state.QpC.toFixed(2)} pC`}
+
+二、实时读数
+电容 C = ${cap.v} ${cap.u}
+电荷 Q = ${q.v} ${q.u}
+电压 V = ${m.V.toFixed(2)} V
+场强 E = ${e.v} ${e.u}
+面电荷密度 σ = ${sg.v} ${sg.u}
+储能 U = ${u.v} ${u.u}
+灵敏度 |∂C/∂d| = ${se.v} ${se.u}
+${state.mode==='sensor'?`电容变化 ΔC = ${(m.C-m.C0).toExponential(3)} F
+反演位移 Δx' = ${fmtDx(m.dxEstUm)} µm
+反演误差 = ${Math.abs(m.err).toFixed(3)} µm`:'位移传感未激活'}
+
+三、作业结论
+(2) 改变板间距 d 时，电容如何变化？
+保持极板面积 S 和介质 εᵣ 不变，C = ε₀εᵣS/d，电容与板间距成反比：d 增大，C 减小；d 减半，C 加倍。
+· 恒压源：V 不变，Q = CV 随 C 同比例减小，E = V/d 随 d 反比减小。
+· 恒电荷（断开电源）：Q 不变，V = Q/C = Qd/(ε₀εᵣS) 随 d 线性增大，而 E = Q/(ε₀εᵣS) 保持不变（理想平行板近似）。
+本题最易错点是“d 增大 E 一定减小”；只有恒压时成立，恒电荷时 E 与 d 无关。
+
+(3) 代码中的核心物理公式是什么？
+C = ε₀ εᵣ S / d        （ε₀ = 8.8541878128×10⁻¹² F/m）
+Q = C V
+E = V / d = Q / (ε₀ εᵣ S)
+σ = Q / S
+U = ½ C V² = Q² / (2C)
+ΔC/C₀ ≈ −Δx/d₀       （小位移线性化）
+Δx = d₀ (C₀/C − 1)    （由电容反演位移）
+JavaScript 核心行：const C = EPS0 * epsR * S / d;
+其中 S 必须用 m²、d 必须用 m，输出才是法拉（F）。
+
+四、平台与视频
+交互平台：见作业提交链接
+演示视频：demo.mp4
+
+—— 由 AI 物理实验台自动生成，数据仅用于教学演示。`;
+  }
+  function openReport(){
+    const txt = reportText();
+    const m = model(); const cap=capFmt(m.C),se=sensFmt(m.sens);
+    $('#reportBody').innerHTML = `
+      <div class="report-meta"><span>2026 秋 · 实时生成</span><span>${state.mode==='sensor'?'位移传感模式':'电容实验模式'} · ${state.drive==='voltage'?'恒压':'恒电荷'}</span><b>${cap.v} ${cap.u}</b></div>
+      <div class="rep-section"><div class="rep-h">01 · 实验条件</div>
+        <table class="kv-table">
+          <tr><td>极板面积 S</td><td>${state.S.toFixed(1)} mm² = ${(state.S*1e-6).toExponential(2)} m²</td></tr>
+          <tr><td>板间距 d</td><td>${m.dEffUm.toFixed(0)} µm = ${(m.dEffUm*1e-6).toExponential(2)} m${state.mode==='sensor'?`（d₀=${state.d} µm，Δx=${fmtDx(state.dx)} µm）`:''}</td></tr>
+          <tr><td>相对介电常数 εᵣ</td><td>${state.epsR.toFixed(2)} · ${materialName(state.epsR)}</td></tr>
+          <tr><td>激励</td><td>${state.drive==='voltage'?`恒压 V = ${state.V.toFixed(1)} V`:`恒电荷 Q = ${state.QpC.toFixed(2)} pC`}</td></tr>
+        </table>
+      </div>
+      <div class="rep-section"><div class="rep-h">02 · 实时读数</div>
+        <table class="kv-table">
+          <tr><td>电容 C</td><td>${cap.v} ${cap.u}</td></tr>
+          <tr><td>场强 E / 灵敏度</td><td>${eFmt(m.E).v} ${eFmt(m.E).u} · ${se.v} ${se.u}</td></tr>
+          <tr><td>${state.mode==='sensor'?'反演位移 / 误差':'位移反演'}</td><td>${state.mode==='sensor'?`${fmtDx(m.dxEstUm)} µm / ${Math.abs(m.err).toFixed(3)} µm`:'未激活'}</td></tr>
+        </table>
+      </div>
+      <div class="rep-section"><div class="rep-h">03 · 结论 (2)</div>
+        <p class="rep-text">保持 S 与 εᵣ 不变时，<b>C = ε₀εᵣS/d</b>，C 与 d 成反比：d 增大，C 减小；d 减半，C 加倍。恒压时 V 不变，Q、E 随 d 增大而减小；恒电荷时 Q 不变，V 随 d 线性增大，而 <b>E = Q/(ε₀εᵣS) 保持不变</b>。</p>
+      </div>
+      <div class="rep-section"><div class="rep-h">04 · 核心公式 (3)</div>
+        <div class="rep-formula">C = ε₀ · εᵣ · S / d</div>
+        <div class="rep-formula">Q = C·V &nbsp; E = V/d = Q/(ε₀εᵣS)</div>
+        <div class="rep-formula">Δx = d₀(C₀/C − 1) &nbsp;≈ −d₀·ΔC/C₀</div>
+        <p class="rep-text" style="margin-top:6px">代码核心行：<b>const C = EPS0 * epsR * S / d;</b>。单位：S 用 m²、d 用 m，C 的单位才是 F。</p>
+      </div>`;
+    openModal('reportModal');
+  }
+  $('#reportBtn').addEventListener('click', openReport);
+  $('#reportCopy').addEventListener('click', ()=>copyText(reportText()));
+  $('#reportDownload').addEventListener('click', ()=>downloadFile('电容实验记录.txt', reportText(), 'text/plain;charset=utf-8'));
+  $('#copyQuick').addEventListener('click', ()=>copyText(reportText()));
+  $('#downloadQuick').addEventListener('click', ()=>downloadFile('电容实验记录.txt', reportText(), 'text/plain;charset=utf-8'));
+
+  /* ---------- modals / toast ---------- */
+  function openModal(id){ $('#'+id).hidden=false; document.body.style.overflow='hidden'; }
+  function closeModal(id){ $('#'+id).hidden=true; document.body.style.overflow=''; }
+  $$('[data-close]').forEach(b=>b.addEventListener('click', ()=>closeModal(b.dataset.close)));
+  $$('.modal').forEach(m=>m.addEventListener('click', e=>{ if(e.target===m) closeModal(m.id); }));
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') $$('.modal').forEach(m=>{ if(!m.hidden) closeModal(m.id); }); });
+  $('#guideBtn').addEventListener('click', ()=>openModal('guideModal'));
+  let toastTimer=null;
+  function toast(msg){
+    el.toast.textContent=msg; el.toast.classList.add('on');
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.toast.classList.remove('on'),1800);
+  }
+  async function copyText(txt){
+    try{
+      await navigator.clipboard.writeText(txt);
+      toast('已复制到剪贴板');
+    }catch(e){
+      const ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); toast('已复制到剪贴板'); }catch(err){ toast('复制失败，请手动选择'); }
+      ta.remove();
+    }
+  }
+  function downloadFile(name, content, type){
+    const blob = new Blob([content], {type});
+    const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },200);
+  }
+
+  /* ---------- resize & init ---------- */
+  let resizeTimer;
+  new ResizeObserver(()=>{ clearTimeout(resizeTimer); resizeTimer=setTimeout(()=>{ drawChart(model()); }, 60); }).observe(el.chart.parentElement);
+  window.addEventListener('resize', ()=>{ clearTimeout(resizeTimer); resizeTimer=setTimeout(()=>{ drawChart(model()); },80); });
+
+  // demo cursor
+  if (new URLSearchParams(location.search).has('demo')) document.body.classList.add('demo');
+  window.addEventListener('pointermove', e=>{
+    const c = $('#demoCursor'); if(c){ c.style.left=e.clientX+'px'; c.style.top=e.clientY+'px'; }
+  });
+
+  buildFieldLines(); buildCharges(); refreshDxRange();
+  // initial state: sensor scene selected but lab mode? keep lab for first view
+  $$('.chip[data-scene]').forEach(b=>b.classList.toggle('active', b.dataset.scene==='micro'));
+  renderDataTable();
+  render();
+  // re-render sensor noise smoothly but throttled
+  setInterval(()=>{ if(state.mode==='sensor' && state.noise) scheduleRender(); }, 220);
+  setInterval(sampleSensorTrace, 170);
+  document.body.classList.add('ready');
+})();
+</script>
+</body>
+</html>
+
+
